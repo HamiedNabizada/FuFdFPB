@@ -28,20 +28,13 @@ jobs:
           npm install
           npm run build
 
-      - name: Upload Backend dist
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: srv29520.managed-pleskserver.de
-          username: ${{ secrets.FTP_USER }}
-          password: ${{ secrets.FTP_PASS }}
-          local-dir: ./backend/dist/
-          server-dir: /FuFdFPB.fpbjs.net/backend/dist/
-
-      - name: Upload Frontend
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: srv29520.managed-pleskserver.de
-          username: ${{ secrets.FTP_USER }}
-          password: ${{ secrets.FTP_PASS }}
-          local-dir: ./frontend/dist/
-          server-dir: /FuFdFPB.fpbjs.net/frontend/dist/
+      - name: Upload via lftp
+        run: |
+          sudo apt-get install -y lftp
+          lftp -u ${{ secrets.FTP_USER }},${{ secrets.FTP_PASS }} srv29520.managed-pleskserver.de <<EOF
+          set ssl:verify-certificate no
+          set ftp:passive-mode yes
+          mirror -R --verbose ./backend/dist/ /FuFdFPB.fpbjs.net/backend/dist/
+          mirror -R --verbose ./frontend/dist/ /FuFdFPB.fpbjs.net/frontend/dist/
+          quit
+          EOF
