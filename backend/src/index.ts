@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import { PrismaClient } from '@prisma/client';
 import authRoutes from './routes/auth';
 import schemaRoutes from './routes/schemas';
@@ -27,6 +28,17 @@ app.use('/api/comments', commentRoutes);
 // Health Check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Frontend statische Dateien
+const frontendPath = path.join(__dirname, '../../frontend/dist');
+app.use(express.static(frontendPath));
+
+// SPA Catch-All: Alle nicht-API Routes auf index.html
+app.get('*', (req, res) => {
+  if (!req.path.startsWith('/api')) {
+    res.sendFile(path.join(frontendPath, 'index.html'));
+  }
 });
 
 // Error Handler
