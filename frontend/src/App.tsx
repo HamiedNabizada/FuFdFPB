@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Header from './components/Header';
 import HomePage from './pages/HomePage';
 import SchemaPage from './pages/SchemaPage';
+import SchemaGroupPage from './pages/SchemaGroupPage';
 import LoginPage from './pages/LoginPage';
 
 export interface User {
@@ -58,6 +59,8 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage user={user} />} />
           <Route path="/schema/:id" element={<SchemaPage user={user} />} />
+          <Route path="/group/:groupId" element={<SchemaGroupPage user={user} />} />
+          <Route path="/group/:groupId/schema/:schemaId" element={<SchemaGroupPage user={user} />} />
           <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
         </Routes>
       </main>

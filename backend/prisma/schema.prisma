@@ -19,10 +19,28 @@ model User {
   createdAt    DateTime  @default(now()) @map("created_at")
 
   schemas      Schema[]
+  schemaGroups SchemaGroup[]
   comments     Comment[]
   replies      Reply[]
 
   @@map("users")
+}
+
+// Schema-Gruppen (zusammengehörige XSD-Dateien)
+model SchemaGroup {
+  id          Int       @id @default(autoincrement())
+  name        String
+  version     String
+  description String?   @db.Text
+  uploadedBy  Int?      @map("uploaded_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  uploader    User?     @relation(fields: [uploadedBy], references: [id])
+  schemas     Schema[]
+  comments    Comment[]
+
+  @@unique([name, version])
+  @@map("schema_groups")
 }
 
 // Schemas mit Versionierung
@@ -34,18 +52,46 @@ model Schema {
   uploadedBy Int?      @map("uploaded_by")
   createdAt  DateTime  @default(now()) @map("created_at")
 
+  // Gruppen-Zugehörigkeit (optional für Abwärtskompatibilität)
+  groupId    Int?      @map("group_id")
+  group      SchemaGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  role       String    @default("standalone") // master, imported, included, standalone
+  filename   String?   @db.VarChar(255) // Original-Dateiname
+
   uploader   User?     @relation(fields: [uploadedBy], references: [id])
   comments   Comment[]
 
+  // Abhängigkeiten
+  dependsOn    SchemaDependency[] @relation("DependencySource")
+  dependedBy   SchemaDependency[] @relation("DependencyTarget")
+
   @@unique([name, version])
+  @@index([groupId])
   @@map("schemas")
 }
 
-// Kommentare zu Schema-Elementen
+// Abhängigkeiten zwischen Schemas (xs:import, xs:include)
+model SchemaDependency {
+  id              Int      @id @default(autoincrement())
+  sourceSchemaId  Int      @map("source_schema_id")
+  targetSchemaId  Int      @map("target_schema_id")
+  dependencyType  String   @db.VarChar(50) // import, include
+  namespace       String?  @db.VarChar(500)
+  schemaLocation  String   @db.VarChar(500)
+
+  sourceSchema    Schema   @relation("DependencySource", fields: [sourceSchemaId], references: [id], onDelete: Cascade)
+  targetSchema    Schema   @relation("DependencyTarget", fields: [targetSchemaId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceSchemaId, targetSchemaId, dependencyType])
+  @@map("schema_dependencies")
+}
+
+// Kommentare zu Schema-Elementen oder Gruppen
 model Comment {
   id          Int       @id @default(autoincrement())
-  schemaId    Int       @map("schema_id")
-  xpath       String    @db.VarChar(500) // XPath zum Element
+  schemaId    Int?      @map("schema_id") // Für Element-Kommentare
+  groupId     Int?      @map("group_id")  // Für Gruppen-Kommentare
+  xpath       String?   @db.VarChar(500) // XPath zum Element (null bei Gruppen-Kommentaren)
   elementName String?   @map("element_name") @db.VarChar(255)
   commentText String    @map("comment_text") @db.Text
   authorId    Int?      @map("author_id")
@@ -54,10 +100,13 @@ model Comment {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  schema      Schema    @relation(fields: [schemaId], references: [id], onDelete: Cascade)
+  schema      Schema?   @relation(fields: [schemaId], references: [id], onDelete: Cascade)
+  group       SchemaGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
   author      User?     @relation(fields: [authorId], references: [id])
   replies     Reply[]
 
+  @@index([schemaId])
+  @@index([groupId])
   @@map("comments")
 }
 
