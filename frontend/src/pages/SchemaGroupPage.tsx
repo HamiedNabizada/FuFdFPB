@@ -25,6 +25,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [submitting, setSubmitting] = useState(false);
   const [showGroupComments, setShowGroupComments] = useState(false);
+  const [schemaComments, setSchemaComments] = useState<Comment[]>([]);
 
   // Ausgewähltes Schema
   const selectedSchema = useMemo(() => {
@@ -42,13 +43,6 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
       return null;
     }
   }, [selectedSchema?.content]);
-
-  // Element-Kommentare für ausgewähltes Schema
-  const schemaComments = useMemo(() => {
-    // Wir müssen die Kommentare vom Server holen wenn ein Schema ausgewählt ist
-    // Für jetzt nutzen wir einen leeren Array
-    return [] as Comment[];
-  }, [selectedSchemaId]);
 
   // Comment counts per xpath
   const commentCounts = useMemo(() => {
@@ -82,6 +76,28 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
       setSelectedSchemaId(master?.id || group.schemas[0].id);
     }
   }, [group, schemaId]);
+
+  // Kommentare laden wenn Schema ausgewählt wird
+  useEffect(() => {
+    if (selectedSchemaId) {
+      fetchSchemaComments();
+    } else {
+      setSchemaComments([]);
+    }
+  }, [selectedSchemaId]);
+
+  const fetchSchemaComments = async () => {
+    if (!selectedSchemaId) return;
+    try {
+      const res = await fetch(`/api/comments/schema/${selectedSchemaId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSchemaComments(data.comments || []);
+      }
+    } catch (err) {
+      console.error('Error fetching schema comments:', err);
+    }
+  };
 
   const fetchGroup = async () => {
     try {
@@ -127,6 +143,108 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
       alert('Kommentar konnte nicht gespeichert werden');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Element-Kommentar hinzufügen
+  const handleAddElementComment = async (text: string, authorName?: string) => {
+    if (!selectedSchemaId || !selectedNode) return;
+
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/comments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          schemaId: selectedSchemaId,
+          xpath: selectedNode.xpath,
+          elementName: selectedNode.name,
+          commentText: text,
+          authorName,
+        }),
+      });
+
+      if (res.ok) {
+        fetchSchemaComments();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Kommentar konnte nicht gespeichert werden');
+      }
+    } catch (err) {
+      console.error('Error adding comment:', err);
+      alert('Kommentar konnte nicht gespeichert werden');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Kommentar als erledigt markieren
+  const handleResolve = async (commentId: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/comments/${commentId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ status: 'resolved' }),
+      });
+
+      if (res.ok) {
+        fetchSchemaComments();
+      }
+    } catch (err) {
+      console.error('Error resolving comment:', err);
+    }
+  };
+
+  // Auf Kommentar antworten
+  const handleReply = async (commentId: number, text: string, authorName?: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/comments/${commentId}/reply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          replyText: text,
+          authorName,
+        }),
+      });
+
+      if (res.ok) {
+        fetchSchemaComments();
+      }
+    } catch (err) {
+      console.error('Error adding reply:', err);
+    }
+  };
+
+  // Kommentar löschen
+  const handleDelete = async (commentId: number) => {
+    if (!confirm('Kommentar wirklich löschen?')) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (res.ok) {
+        fetchSchemaComments();
+      }
+    } catch (err) {
+      console.error('Error deleting comment:', err);
     }
   };
 
@@ -382,9 +500,9 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
                 <CommentList
                   comments={nodeComments}
                   user={user}
-                  onResolve={() => {}}
-                  onReply={() => {}}
-                  onDelete={() => {}}
+                  onResolve={handleResolve}
+                  onReply={handleReply}
+                  onDelete={handleDelete}
                 />
 
                 <div className="mt-4 pt-4 border-t">
@@ -393,7 +511,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
                   </h4>
                   <CommentForm
                     user={user}
-                    onSubmit={() => {}}
+                    onSubmit={handleAddElementComment}
                     disabled={submitting}
                   />
                 </div>
