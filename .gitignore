@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment & Secrets
+.env
+.env.local
+.env.production
+Database.txt
+.vscode/sftp.json
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+*.txt.log
+npm-debug.log*
+protokoll.txt
+
+# Prisma
+backend/prisma/*.db
+backend/prisma/migrations/
+
+# Cache
+.cache/
+.parcel-cache/

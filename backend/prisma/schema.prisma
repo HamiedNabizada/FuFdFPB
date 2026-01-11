@@ -1,0 +1,82 @@
+// Prisma Schema für XSD Review Tool
+// Datenbank: MySQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Benutzer
+model User {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  name         String
+  passwordHash String    @map("password_hash")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  schemas      Schema[]
+  comments     Comment[]
+  replies      Reply[]
+
+  @@map("users")
+}
+
+// Schemas mit Versionierung
+model Schema {
+  id         Int       @id @default(autoincrement())
+  name       String    // z.B. "FPD_Schema"
+  version    String    // z.B. "1.0"
+  content    String    @db.LongText // XSD-Inhalt
+  uploadedBy Int?      @map("uploaded_by")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  uploader   User?     @relation(fields: [uploadedBy], references: [id])
+  comments   Comment[]
+
+  @@unique([name, version])
+  @@map("schemas")
+}
+
+// Kommentare zu Schema-Elementen
+model Comment {
+  id          Int       @id @default(autoincrement())
+  schemaId    Int       @map("schema_id")
+  xpath       String    @db.VarChar(500) // XPath zum Element
+  elementName String?   @map("element_name") @db.VarChar(255)
+  commentText String    @map("comment_text") @db.Text
+  authorId    Int?      @map("author_id")
+  authorName  String?   @map("author_name") @db.VarChar(255)
+  status      CommentStatus @default(open)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  schema      Schema    @relation(fields: [schemaId], references: [id], onDelete: Cascade)
+  author      User?     @relation(fields: [authorId], references: [id])
+  replies     Reply[]
+
+  @@map("comments")
+}
+
+// Antworten auf Kommentare
+model Reply {
+  id         Int      @id @default(autoincrement())
+  commentId  Int      @map("comment_id")
+  replyText  String   @map("reply_text") @db.Text
+  authorId   Int?     @map("author_id")
+  authorName String?  @map("author_name") @db.VarChar(255)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  comment    Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  author     User?    @relation(fields: [authorId], references: [id])
+
+  @@map("replies")
+}
+
+enum CommentStatus {
+  open
+  resolved
+}
