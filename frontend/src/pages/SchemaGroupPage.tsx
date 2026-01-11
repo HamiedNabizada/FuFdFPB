@@ -58,7 +58,10 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
   // Filtered comments for selected node
   const nodeComments = useMemo(() => {
     if (!selectedNode) return [];
+    console.log('[DEBUG] Filtering comments. Total:', schemaComments.length, 'Node xpath:', selectedNode.xpath);
+    console.log('[DEBUG] All comment xpaths:', schemaComments.map(c => c.xpath));
     let filtered = schemaComments.filter((c) => c.xpath === selectedNode.xpath);
+    console.log('[DEBUG] After xpath filter:', filtered.length);
     if (filterStatus !== 'all') {
       filtered = filtered.filter((c) => c.status === filterStatus);
     }
@@ -89,11 +92,15 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
   }, [selectedSchemaId]);
 
   const fetchSchemaComments = async (schemaId: number) => {
+    console.log('[DEBUG] Fetching comments for schemaId:', schemaId);
     try {
       const res = await fetch(`/api/comments/schema/${schemaId}`);
       if (res.ok) {
         const data = await res.json();
+        console.log('[DEBUG] Received comments:', data.comments);
         setSchemaComments(data.comments || []);
+      } else {
+        console.error('[DEBUG] Failed to fetch comments, status:', res.status);
       }
     } catch (err) {
       console.error('Error fetching schema comments:', err);
