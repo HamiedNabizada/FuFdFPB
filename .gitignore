@@ -34,3 +34,6 @@ backend/prisma/migrations/
 # Cache
 .cache/
 .parcel-cache/
+
+# Local config
+.claude/
