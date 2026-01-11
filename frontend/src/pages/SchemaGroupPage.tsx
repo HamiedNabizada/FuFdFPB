@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, FileCode, FolderOpen, Filter, ChevronRight, MessageSquare } from 'lucide-react';
+import { ArrowLeft, FileCode, FolderOpen, Filter, ChevronRight, MessageSquare, Reply, Trash2 } from 'lucide-react';
 import type { User } from '../App';
 import { parseXsd, type XsdNode } from '../lib/xsd-parser';
 import SchemaTree from '../components/SchemaTree';
@@ -26,6 +26,8 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
   const [submitting, setSubmitting] = useState(false);
   const [showGroupComments, setShowGroupComments] = useState(false);
   const [schemaComments, setSchemaComments] = useState<Comment[]>([]);
+  const [replyingToGroupComment, setReplyingToGroupComment] = useState<number | null>(null);
+  const [groupReplyText, setGroupReplyText] = useState('');
 
   // Ausgewähltes Schema
   const selectedSchema = useMemo(() => {
@@ -143,6 +145,58 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
       alert('Kommentar konnte nicht gespeichert werden');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Auf Gruppen-Kommentar antworten
+  const handleGroupCommentReply = async (commentId: number) => {
+    if (!groupReplyText.trim()) return;
+
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/comments/${commentId}/reply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          replyText: groupReplyText,
+          authorName: user ? undefined : 'Anonym',
+        }),
+      });
+
+      if (res.ok) {
+        setGroupReplyText('');
+        setReplyingToGroupComment(null);
+        fetchGroup();
+      }
+    } catch (err) {
+      console.error('Error adding reply:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Gruppen-Kommentar löschen
+  const handleDeleteGroupComment = async (commentId: number) => {
+    if (!confirm('Kommentar wirklich löschen?')) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (res.ok) {
+        fetchGroup();
+      }
+    } catch (err) {
+      console.error('Error deleting comment:', err);
     }
   };
 
@@ -427,10 +481,65 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
                         <div className="flex items-start justify-between mb-2">
                           <span className="font-medium text-sm">{comment.authorName}</span>
                           <span className="text-xs text-gray-500">
-                            {new Date(comment.createdAt).toLocaleDateString('de-DE')}
+                            {new Date(comment.createdAt).toLocaleString('de-DE')}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-700">{comment.commentText}</p>
+                        <p className="text-sm text-gray-700 mb-3">{comment.commentText}</p>
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-3 text-xs">
+                          <button
+                            onClick={() => setReplyingToGroupComment(
+                              replyingToGroupComment === comment.id ? null : comment.id
+                            )}
+                            className="flex items-center gap-1 text-gray-500 hover:text-blue-600"
+                          >
+                            <Reply size={14} />
+                            Antworten
+                          </button>
+                          {user && (
+                            <button
+                              onClick={() => handleDeleteGroupComment(comment.id)}
+                              className="flex items-center gap-1 text-gray-500 hover:text-red-600"
+                            >
+                              <Trash2 size={14} />
+                              Löschen
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Reply Form */}
+                        {replyingToGroupComment === comment.id && (
+                          <div className="mt-3 pt-3 border-t">
+                            <textarea
+                              value={groupReplyText}
+                              onChange={(e) => setGroupReplyText(e.target.value)}
+                              placeholder="Antwort schreiben..."
+                              className="w-full border rounded-lg px-3 py-2 text-sm resize-none"
+                              rows={2}
+                            />
+                            <div className="flex gap-2 mt-2">
+                              <button
+                                onClick={() => handleGroupCommentReply(comment.id)}
+                                disabled={submitting || !groupReplyText.trim()}
+                                className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
+                              >
+                                Antworten
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setReplyingToGroupComment(null);
+                                  setGroupReplyText('');
+                                }}
+                                className="px-3 py-1 text-gray-600 text-sm hover:text-gray-800"
+                              >
+                                Abbrechen
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Replies */}
                         {comment.replies.length > 0 && (
                           <div className="mt-3 pl-3 border-l-2 space-y-2">
                             {comment.replies.map((reply) => (
@@ -438,7 +547,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
                                 <span className="font-medium">{reply.authorName}</span>
                                 <span className="text-gray-500 mx-1">·</span>
                                 <span className="text-xs text-gray-500">
-                                  {new Date(reply.createdAt).toLocaleDateString('de-DE')}
+                                  {new Date(reply.createdAt).toLocaleString('de-DE')}
                                 </span>
                                 <p className="text-gray-700 mt-1">{reply.replyText}</p>
                               </div>
