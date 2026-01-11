@@ -21,8 +21,6 @@ jobs:
           cd backend
           npm install
           npm run build
-          npx prisma generate
-          npm prune --production
 
       - name: Build Frontend
         run: |
@@ -30,19 +28,14 @@ jobs:
           npm install
           npm run build
 
-      - name: Upload Backend
+      - name: Upload Backend dist
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: srv29520.managed-pleskserver.de
           username: ${{ secrets.FTP_USER }}
           password: ${{ secrets.FTP_PASS }}
-          local-dir: ./backend/
-          server-dir: /FuFdFPB.fpbjs.net/backend/
-          exclude: |
-            src/**
-            tsconfig.json
-            .env.example
-            package-lock.json
+          local-dir: ./backend/dist/
+          server-dir: /FuFdFPB.fpbjs.net/backend/dist/
 
       - name: Upload Frontend
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
