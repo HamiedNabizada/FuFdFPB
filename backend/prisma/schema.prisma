@@ -75,9 +75,9 @@ model SchemaDependency {
   id              Int      @id @default(autoincrement())
   sourceSchemaId  Int      @map("source_schema_id")
   targetSchemaId  Int      @map("target_schema_id")
-  dependencyType  String   @db.VarChar(50) // import, include
+  dependencyType  String   @map("dependency_type") @db.VarChar(50) // import, include
   namespace       String?  @db.VarChar(500)
-  schemaLocation  String   @db.VarChar(500)
+  schemaLocation  String   @map("schema_location") @db.VarChar(500)
 
   sourceSchema    Schema   @relation("DependencySource", fields: [sourceSchemaId], references: [id], onDelete: Cascade)
   targetSchema    Schema   @relation("DependencyTarget", fields: [targetSchemaId], references: [id], onDelete: Cascade)
