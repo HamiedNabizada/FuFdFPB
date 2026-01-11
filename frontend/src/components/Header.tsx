@@ -31,10 +31,10 @@ export default function Header({ user, onLogout }: HeaderProps) {
             </div>
             <div className="flex flex-col">
               <span className="font-semibold text-white text-lg leading-tight">
-                Schema Review
+                VDI/VDE 3682
               </span>
               <span className="text-xs text-primary-300 hidden sm:block">
-                VDI/VDE 3682 Fachausschuss
+                Diskussionsplattform Serialisierungsformat
               </span>
             </div>
           </Link>
