@@ -35,6 +35,9 @@ jobs:
           set ssl:verify-certificate no
           set ftp:passive-mode yes
           mirror -R --verbose ./backend/dist/ /backend/dist/
+          put ./backend/package.json -o /backend/package.json
+          put ./backend/package-lock.json -o /backend/package-lock.json
+          mirror -R --verbose ./backend/prisma/ /backend/prisma/
           mirror -R --verbose ./frontend/dist/ /frontend/dist/
           quit
           EOF
