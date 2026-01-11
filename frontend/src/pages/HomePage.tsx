@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Upload, FileCode, MessageCircle, ChevronRight, FolderOpen, Files } from 'lucide-react';
-import type { User } from '../App';
+import { Upload, FileText, MessageCircle, ChevronRight, FolderOpen, Files, Calendar, User } from 'lucide-react';
+import type { User as UserType } from '../App';
 import type { SchemaGroup } from '../types/schemaGroup';
 import SchemaGroupUpload from '../components/SchemaGroupUpload';
 
@@ -14,7 +14,7 @@ interface SchemaVersion {
 }
 
 interface HomePageProps {
-  user: User | null;
+  user: UserType | null;
 }
 
 type UploadMode = 'none' | 'single' | 'group';
@@ -104,42 +104,43 @@ export default function HomePage({ user }: HomePageProps) {
     fetchData();
   };
 
-  // Filtere Einzelschemas (ohne Gruppenzugehörigkeit)
   const standaloneSchemas = Object.entries(schemas);
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="text-center text-gray-500">Laden...</div>
+      <div className="max-w-5xl mx-auto px-4 py-16">
+        <div className="flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-5xl mx-auto px-4 py-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-start justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">XML Schemas</h1>
-          <p className="text-gray-600 mt-1">
-            Schemas zur Diskussion im Fachausschuss
+          <h1 className="text-2xl font-semibold text-primary-900">XML Schema Bibliothek</h1>
+          <p className="text-primary-500 mt-1">
+            Schemas zur Diskussion und Abstimmung im Fachausschuss
           </p>
         </div>
         {user && uploadMode === 'none' && (
           <div className="flex gap-2">
             <button
               onClick={() => setUploadMode('group')}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+              className="btn-primary"
             >
               <Files className="w-4 h-4" />
               Schema-Gruppe
             </button>
             <button
               onClick={() => setUploadMode('single')}
-              className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+              className="btn-secondary"
             >
               <Upload className="w-4 h-4" />
-              Einzelnes Schema
+              Einzelschema
             </button>
           </div>
         )}
@@ -147,20 +148,22 @@ export default function HomePage({ user }: HomePageProps) {
 
       {/* Group Upload */}
       {uploadMode === 'group' && (
-        <SchemaGroupUpload
-          onSuccess={handleGroupUploadSuccess}
-          onCancel={() => setUploadMode('none')}
-        />
+        <div className="mb-8">
+          <SchemaGroupUpload
+            onSuccess={handleGroupUploadSuccess}
+            onCancel={() => setUploadMode('none')}
+          />
+        </div>
       )}
 
       {/* Single File Upload Form */}
       {uploadMode === 'single' && (
-        <form onSubmit={handleUpload} className="bg-white border rounded-lg p-6 mb-8 space-y-4">
-          <h2 className="font-semibold text-gray-900">Einzelnes Schema hochladen</h2>
+        <form onSubmit={handleUpload} className="card p-6 mb-8">
+          <h2 className="text-lg font-semibold text-primary-900 mb-4">Einzelnes Schema hochladen</h2>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-primary-700 mb-1.5">
                 Schema-Name
               </label>
               <input
@@ -168,11 +171,11 @@ export default function HomePage({ user }: HomePageProps) {
                 placeholder="z.B. FPD_Schema"
                 value={uploadForm.name}
                 onChange={(e) => setUploadForm({ ...uploadForm, name: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-primary-700 mb-1.5">
                 Version
               </label>
               <input
@@ -180,25 +183,28 @@ export default function HomePage({ user }: HomePageProps) {
                 placeholder="z.B. 1.0"
                 value={uploadForm.version}
                 onChange={(e) => setUploadForm({ ...uploadForm, version: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input"
               />
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-primary-700 mb-1.5">
               XSD-Datei
             </label>
             <input
               type="file"
               accept=".xsd,.xml"
               onChange={handleFileSelect}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              className="input file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
+                       file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700
+                       hover:file:bg-primary-100"
             />
           </div>
 
           {uploadForm.content && (
-            <div className="text-sm text-green-600">
+            <div className="text-sm text-accent-600 mb-4 flex items-center gap-2">
+              <FileText className="w-4 h-4" />
               Datei geladen ({Math.round(uploadForm.content.length / 1024)} KB)
             </div>
           )}
@@ -207,14 +213,14 @@ export default function HomePage({ user }: HomePageProps) {
             <button
               type="submit"
               disabled={uploading || !uploadForm.name || !uploadForm.version || !uploadForm.content}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="btn-primary"
             >
               {uploading ? 'Wird hochgeladen...' : 'Hochladen'}
             </button>
             <button
               type="button"
               onClick={() => setUploadMode('none')}
-              className="text-gray-600 px-4 py-2 hover:text-gray-800"
+              className="btn-ghost"
             >
               Abbrechen
             </button>
@@ -224,119 +230,132 @@ export default function HomePage({ user }: HomePageProps) {
 
       {/* Schema Groups */}
       {groups.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <FolderOpen className="w-5 h-5 text-blue-600" />
-            Schema-Gruppen
-          </h2>
-          <div className="space-y-4">
+        <section className="mb-10">
+          <div className="flex items-center gap-2 mb-4">
+            <FolderOpen className="w-5 h-5 text-primary-600" />
+            <h2 className="text-lg font-semibold text-primary-900">Schema-Gruppen</h2>
+            <span className="badge-neutral">{groups.length}</span>
+          </div>
+
+          <div className="space-y-3">
             {groups.map((group) => (
-              <div key={group.id} className="bg-white border rounded-lg overflow-hidden">
-                <Link
-                  to={`/group/${group.id}`}
-                  className="block px-4 py-3 bg-gray-50 border-b hover:bg-gray-100"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                        <FolderOpen className="w-5 h-5 text-blue-600" />
-                        {group.name}
-                        <span className="text-sm font-mono bg-gray-200 px-2 py-0.5 rounded">
-                          v{group.version}
+              <Link
+                key={group.id}
+                to={`/group/${group.id}`}
+                className="card-hover block"
+              >
+                <div className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-1">
+                        <h3 className="font-semibold text-primary-900">{group.name}</h3>
+                        <span className="badge-primary">v{group.version}</span>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-primary-500">
+                        <span className="flex items-center gap-1">
+                          <FileText className="w-3.5 h-3.5" />
+                          {group.schemas.length} Dateien
                         </span>
-                      </h3>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {group.schemas.length} Dateien · von {group.uploadedBy} · {new Date(group.createdAt).toLocaleDateString('de-DE')}
-                      </p>
+                        <span className="flex items-center gap-1">
+                          <User className="w-3.5 h-3.5" />
+                          {group.uploadedBy}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5" />
+                          {new Date(group.createdAt).toLocaleDateString('de-DE')}
+                        </span>
+                      </div>
                     </div>
                     <div className="flex items-center gap-3">
                       {(group.commentCount > 0 || group.schemas.some(s => s.commentCount > 0)) && (
-                        <span className="flex items-center gap-1 text-sm text-gray-600">
+                        <span className="flex items-center gap-1.5 text-sm text-primary-500">
                           <MessageCircle className="w-4 h-4" />
                           {group.commentCount + group.schemas.reduce((sum, s) => sum + s.commentCount, 0)}
                         </span>
                       )}
-                      <ChevronRight className="w-4 h-4 text-gray-400" />
+                      <ChevronRight className="w-5 h-5 text-primary-300" />
                     </div>
                   </div>
-                </Link>
-                <div className="px-4 py-2 flex flex-wrap gap-2">
-                  {group.schemas.map((schema) => (
-                    <span
-                      key={schema.id}
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        schema.role === 'master'
-                          ? 'bg-blue-100 text-blue-700'
-                          : schema.role === 'imported'
-                          ? 'bg-green-100 text-green-700'
-                          : schema.role === 'included'
-                          ? 'bg-purple-100 text-purple-700'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}
-                    >
-                      {schema.filename}
-                    </span>
-                  ))}
+
+                  {/* Schema badges */}
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {group.schemas.map((schema) => (
+                      <span
+                        key={schema.id}
+                        className={`text-xs px-2 py-0.5 rounded ${
+                          schema.role === 'master'
+                            ? 'bg-primary-100 text-primary-700 font-medium'
+                            : schema.role === 'imported'
+                            ? 'bg-accent-50 text-accent-700'
+                            : schema.role === 'included'
+                            ? 'bg-purple-50 text-purple-700'
+                            : 'bg-gray-50 text-gray-600'
+                        }`}
+                      >
+                        {schema.filename}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
       {/* Individual Schemas */}
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <FileCode className="w-5 h-5 text-blue-600" />
-          Einzelne Schemas
-        </h2>
+      <section>
+        <div className="flex items-center gap-2 mb-4">
+          <FileText className="w-5 h-5 text-primary-600" />
+          <h2 className="text-lg font-semibold text-primary-900">Einzelne Schemas</h2>
+          <span className="badge-neutral">{standaloneSchemas.length}</span>
+        </div>
 
         {standaloneSchemas.length === 0 ? (
-          <div className="text-center py-12 bg-white border rounded-lg">
-            <FileCode className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Keine einzelnen Schemas vorhanden</h3>
-            <p className="text-gray-600">
+          <div className="card p-12 text-center">
+            <FileText className="w-12 h-12 mx-auto mb-4 text-primary-200" />
+            <h3 className="text-lg font-medium text-primary-900 mb-2">Keine Schemas vorhanden</h3>
+            <p className="text-primary-500">
               {user
                 ? 'Laden Sie ein Schema hoch, um mit der Diskussion zu beginnen.'
                 : 'Melden Sie sich an, um Schemas hochzuladen.'}
             </p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-3">
             {standaloneSchemas.map(([name, versions]) => (
-              <div key={name} className="bg-white border rounded-lg overflow-hidden">
-                <div className="px-4 py-3 bg-gray-50 border-b">
-                  <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                    <FileCode className="w-5 h-5 text-blue-600" />
+              <div key={name} className="card overflow-hidden">
+                <div className="px-4 py-3 bg-primary-50 border-b border-primary-100">
+                  <h3 className="font-semibold text-primary-900 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-primary-600" />
                     {name}
                   </h3>
                 </div>
-                <div className="divide-y">
+                <div className="divide-y divide-primary-50">
                   {versions.map((version) => (
                     <Link
                       key={version.id}
                       to={`/schema/${version.id}`}
-                      className="flex items-center justify-between px-4 py-3 hover:bg-gray-50"
+                      className="flex items-center justify-between px-4 py-3 hover:bg-primary-50 transition-colors"
                     >
                       <div className="flex items-center gap-4">
-                        <span className="text-sm font-mono bg-gray-100 px-2 py-0.5 rounded">
-                          v{version.version}
+                        <span className="badge-primary">v{version.version}</span>
+                        <span className="text-sm text-primary-500 flex items-center gap-1">
+                          <User className="w-3.5 h-3.5" />
+                          {version.uploadedBy}
                         </span>
-                        <span className="text-sm text-gray-600">
-                          von {version.uploadedBy}
-                        </span>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-sm text-primary-400">
                           {new Date(version.createdAt).toLocaleDateString('de-DE')}
                         </span>
                       </div>
                       <div className="flex items-center gap-3">
                         {version.commentCount > 0 && (
-                          <span className="flex items-center gap-1 text-sm text-gray-600">
+                          <span className="flex items-center gap-1.5 text-sm text-primary-500">
                             <MessageCircle className="w-4 h-4" />
                             {version.commentCount}
                           </span>
                         )}
-                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                        <ChevronRight className="w-5 h-5 text-primary-300" />
                       </div>
                     </Link>
                   ))}
@@ -345,7 +364,7 @@ export default function HomePage({ user }: HomePageProps) {
             ))}
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }

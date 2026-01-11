@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, FileCode, FolderOpen, Filter, ChevronRight, MessageSquare, Reply, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileText, FolderOpen, Filter, ChevronRight, MessageSquare, Reply, Trash2, Calendar, User as UserIcon } from 'lucide-react';
 import type { User } from '../App';
 import { parseXsd, type XsdNode } from '../lib/xsd-parser';
 import SchemaTree from '../components/SchemaTree';
@@ -305,11 +305,11 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'master':
-        return <span className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">Master</span>;
+        return <span className="text-xs px-2 py-0.5 bg-primary-100 text-primary-700 font-medium rounded">Master</span>;
       case 'imported':
-        return <span className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded">Import</span>;
+        return <span className="text-xs px-2 py-0.5 bg-accent-50 text-accent-700 rounded">Import</span>;
       case 'included':
-        return <span className="text-xs px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded">Include</span>;
+        return <span className="text-xs px-2 py-0.5 bg-purple-50 text-purple-700 rounded">Include</span>;
       default:
         return null;
     }
@@ -317,19 +317,19 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center">
-        <div className="text-gray-500">Laden...</div>
+      <div className="h-screen flex items-center justify-center bg-primary-50">
+        <div className="w-8 h-8 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
       </div>
     );
   }
 
   if (error || !group) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="text-center">
-          <h1 className="text-xl font-bold text-gray-900 mb-2">Fehler</h1>
-          <p className="text-gray-600 mb-4">{error || 'Gruppe nicht gefunden'}</p>
-          <Link to="/" className="text-blue-600 hover:underline">
+      <div className="max-w-4xl mx-auto px-4 py-16">
+        <div className="card p-8 text-center">
+          <h1 className="text-xl font-semibold text-primary-900 mb-2">Fehler</h1>
+          <p className="text-primary-500 mb-6">{error || 'Gruppe nicht gefunden'}</p>
+          <Link to="/" className="btn-primary">
             Zurück zur Übersicht
           </Link>
         </div>
@@ -338,34 +338,44 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
   }
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen flex flex-col bg-primary-50">
       {/* Header */}
-      <div className="flex-shrink-0 bg-white border-b px-4 py-3">
+      <div className="flex-shrink-0 bg-white border-b border-primary-100 px-4 py-3 shadow-sm">
         <div className="flex items-center gap-4">
-          <Link to="/" className="text-gray-500 hover:text-gray-700">
+          <Link to="/" className="p-1.5 text-primary-400 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <div className="flex items-center gap-2">
-            <FolderOpen className="w-5 h-5 text-blue-600" />
-            <h1 className="font-semibold text-gray-900">{group.name}</h1>
-            <span className="text-sm font-mono bg-gray-100 px-2 py-0.5 rounded">
-              v{group.version}
-            </span>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
+              <FolderOpen className="w-4 h-4 text-primary-600" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="font-semibold text-primary-900">{group.name}</h1>
+                <span className="badge-primary">v{group.version}</span>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-primary-500">
+                <span className="flex items-center gap-1">
+                  <UserIcon className="w-3 h-3" />
+                  {group.uploadedBy}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  {new Date(group.createdAt).toLocaleDateString('de-DE')}
+                </span>
+              </div>
+            </div>
           </div>
-          <span className="text-sm text-gray-500">
-            von {group.uploadedBy} am{' '}
-            {new Date(group.createdAt).toLocaleDateString('de-DE')}
-          </span>
           <button
             onClick={() => setShowGroupComments(!showGroupComments)}
-            className={`ml-auto flex items-center gap-1 px-3 py-1 rounded text-sm ${
+            className={`ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               showGroupComments
-                ? 'bg-blue-100 text-blue-700'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-primary-100 text-primary-700'
+                : 'bg-primary-50 text-primary-600 hover:bg-primary-100'
             }`}
           >
             <MessageSquare size={16} />
-            Gruppen-Kommentare ({group.comments.length})
+            Diskussion ({group.comments.length})
           </button>
         </div>
       </div>
@@ -373,11 +383,11 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - File List & Tree */}
-        <div className="w-1/3 border-r bg-gray-50 flex flex-col overflow-hidden">
+        <div className="w-1/3 border-r border-primary-100 bg-white flex flex-col overflow-hidden">
           {/* File List */}
-          <div className="flex-shrink-0 border-b bg-white">
-            <div className="p-2 border-b">
-              <h2 className="text-sm font-medium text-gray-700">Dateien ({group.schemas.length})</h2>
+          <div className="flex-shrink-0 border-b border-primary-100">
+            <div className="px-3 py-2 border-b border-primary-50 bg-primary-50">
+              <h2 className="text-sm font-medium text-primary-700">Dateien ({group.schemas.length})</h2>
             </div>
             <div className="max-h-40 overflow-y-auto">
               {group.schemas.map((schema) => (
@@ -387,15 +397,19 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
                     setSelectedSchemaId(schema.id);
                     setSelectedNode(null);
                   }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50 ${
-                    selectedSchemaId === schema.id ? 'bg-blue-50 border-l-2 border-blue-500' : ''
+                  className={`w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors ${
+                    selectedSchemaId === schema.id
+                      ? 'bg-primary-50 border-l-2 border-primary-600'
+                      : 'hover:bg-primary-50 border-l-2 border-transparent'
                   }`}
                 >
-                  <FileCode size={16} className={selectedSchemaId === schema.id ? 'text-blue-600' : 'text-gray-400'} />
-                  <span className="flex-1 truncate">{schema.filename}</span>
+                  <FileText size={16} className={selectedSchemaId === schema.id ? 'text-primary-600' : 'text-primary-300'} />
+                  <span className={`flex-1 truncate ${selectedSchemaId === schema.id ? 'text-primary-900 font-medium' : 'text-primary-700'}`}>
+                    {schema.filename}
+                  </span>
                   {getRoleBadge(schema.role)}
                   {schema.commentCount > 0 && (
-                    <span className="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">
+                    <span className="text-xs bg-primary-100 text-primary-600 px-1.5 py-0.5 rounded-full">
                       {schema.commentCount}
                     </span>
                   )}
@@ -406,20 +420,20 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
 
           {/* Dependencies */}
           {selectedSchema && selectedSchema.dependencies && selectedSchema.dependencies.length > 0 && (
-            <div className="flex-shrink-0 border-b bg-white">
-              <div className="p-2 border-b">
-                <h3 className="text-xs font-medium text-gray-500 uppercase">Abhängigkeiten</h3>
+            <div className="flex-shrink-0 border-b border-primary-100">
+              <div className="px-3 py-2 border-b border-primary-50 bg-primary-50">
+                <h3 className="text-xs font-medium text-primary-500 uppercase tracking-wide">Abhängigkeiten</h3>
               </div>
               <div className="p-2 space-y-1">
                 {selectedSchema.dependencies.map((dep, i) => (
                   <button
                     key={i}
                     onClick={() => setSelectedSchemaId(dep.targetId)}
-                    className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                    className="flex items-center gap-1.5 text-xs text-primary-600 hover:text-primary-800 hover:bg-primary-50 px-2 py-1 rounded transition-colors"
                   >
                     <ChevronRight size={12} />
-                    <span className="text-gray-500">{dep.type}:</span>
-                    {dep.targetFilename}
+                    <span className="text-primary-400">{dep.type}:</span>
+                    <span className="font-medium">{dep.targetFilename}</span>
                   </button>
                 ))}
               </div>
@@ -427,9 +441,9 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
           )}
 
           {/* Schema Tree */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-2 border-b bg-white sticky top-0">
-              <h2 className="text-sm font-medium text-gray-700">
+          <div className="flex-1 overflow-y-auto bg-white">
+            <div className="px-3 py-2 border-b border-primary-50 bg-primary-50 sticky top-0 z-10">
+              <h2 className="text-sm font-medium text-primary-700">
                 {selectedSchema ? selectedSchema.filename : 'Schema-Struktur'}
               </h2>
             </div>
@@ -443,7 +457,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
                 />
               </div>
             ) : (
-              <div className="p-4 text-center text-gray-500 text-sm">
+              <div className="p-8 text-center text-primary-400 text-sm">
                 {selectedSchema ? 'Schema konnte nicht geparst werden' : 'Keine Datei ausgewählt'}
               </div>
             )}
@@ -451,40 +465,40 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
         </div>
 
         {/* Right Panel - Details & Comments */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto bg-primary-50 p-4">
           {showGroupComments ? (
             /* Group Comments View */
-            <div className="p-4 space-y-6">
-              <div className="bg-white border rounded-lg p-4">
-                <h3 className="font-semibold text-gray-900 mb-4">
-                  Kommentare zur Schema-Gruppe
+            <div className="space-y-4">
+              <div className="card p-5">
+                <h3 className="font-semibold text-primary-900 mb-4">
+                  Diskussion zur Schema-Gruppe
                   {group.comments.length > 0 && (
-                    <span className="ml-2 text-sm font-normal text-gray-500">
+                    <span className="ml-2 text-sm font-normal text-primary-500">
                       ({group.comments.length})
                     </span>
                   )}
                 </h3>
 
                 {group.description && (
-                  <div className="mb-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-600">
+                  <div className="mb-4 p-3 bg-primary-50 rounded-lg text-sm text-primary-600 border border-primary-100">
                     {group.description}
                   </div>
                 )}
 
                 {/* Group Comments List */}
-                <div className="space-y-4 mb-6">
+                <div className="space-y-3 mb-6">
                   {group.comments.length === 0 ? (
-                    <p className="text-gray-500 text-sm">Noch keine Gruppen-Kommentare vorhanden.</p>
+                    <p className="text-primary-400 text-sm py-4 text-center">Noch keine Kommentare vorhanden.</p>
                   ) : (
                     group.comments.map((comment) => (
-                      <div key={comment.id} className="border rounded-lg p-3">
+                      <div key={comment.id} className="border border-primary-100 rounded-lg p-4 bg-primary-50/50">
                         <div className="flex items-start justify-between mb-2">
-                          <span className="font-medium text-sm">{comment.authorName}</span>
-                          <span className="text-xs text-gray-500">
+                          <span className="font-medium text-sm text-primary-900">{comment.authorName}</span>
+                          <span className="text-xs text-primary-400">
                             {new Date(comment.createdAt).toLocaleString('de-DE')}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-700 mb-3">{comment.commentText}</p>
+                        <p className="text-sm text-primary-700 mb-3">{comment.commentText}</p>
 
                         {/* Action Buttons */}
                         <div className="flex items-center gap-3 text-xs">
@@ -492,7 +506,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
                             onClick={() => setReplyingToGroupComment(
                               replyingToGroupComment === comment.id ? null : comment.id
                             )}
-                            className="flex items-center gap-1 text-gray-500 hover:text-blue-600"
+                            className="flex items-center gap-1 text-primary-500 hover:text-primary-700 transition-colors"
                           >
                             <Reply size={14} />
                             Antworten
@@ -500,7 +514,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
                           {user && (
                             <button
                               onClick={() => handleDeleteGroupComment(comment.id)}
-                              className="flex items-center gap-1 text-gray-500 hover:text-red-600"
+                              className="flex items-center gap-1 text-primary-400 hover:text-red-600 transition-colors"
                             >
                               <Trash2 size={14} />
                               Löschen
@@ -510,19 +524,19 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
 
                         {/* Reply Form */}
                         {replyingToGroupComment === comment.id && (
-                          <div className="mt-3 pt-3 border-t">
+                          <div className="mt-3 pt-3 border-t border-primary-100">
                             <textarea
                               value={groupReplyText}
                               onChange={(e) => setGroupReplyText(e.target.value)}
                               placeholder="Antwort schreiben..."
-                              className="w-full border rounded-lg px-3 py-2 text-sm resize-none"
+                              className="input text-sm resize-none"
                               rows={2}
                             />
                             <div className="flex gap-2 mt-2">
                               <button
                                 onClick={() => handleGroupCommentReply(comment.id)}
                                 disabled={submitting || !groupReplyText.trim()}
-                                className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
+                                className="btn-primary text-sm py-1.5"
                               >
                                 Antworten
                               </button>
@@ -531,7 +545,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
                                   setReplyingToGroupComment(null);
                                   setGroupReplyText('');
                                 }}
-                                className="px-3 py-1 text-gray-600 text-sm hover:text-gray-800"
+                                className="btn-ghost text-sm"
                               >
                                 Abbrechen
                               </button>
@@ -541,15 +555,15 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
 
                         {/* Replies */}
                         {comment.replies.length > 0 && (
-                          <div className="mt-3 pl-3 border-l-2 space-y-2">
+                          <div className="mt-3 pl-3 border-l-2 border-primary-200 space-y-2">
                             {comment.replies.map((reply) => (
                               <div key={reply.id} className="text-sm">
-                                <span className="font-medium">{reply.authorName}</span>
-                                <span className="text-gray-500 mx-1">·</span>
-                                <span className="text-xs text-gray-500">
+                                <span className="font-medium text-primary-800">{reply.authorName}</span>
+                                <span className="text-primary-300 mx-1">·</span>
+                                <span className="text-xs text-primary-400">
                                   {new Date(reply.createdAt).toLocaleString('de-DE')}
                                 </span>
-                                <p className="text-gray-700 mt-1">{reply.replyText}</p>
+                                <p className="text-primary-600 mt-1">{reply.replyText}</p>
                               </div>
                             ))}
                           </div>
@@ -560,9 +574,9 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
                 </div>
 
                 {/* Add Group Comment Form */}
-                <div className="pt-4 border-t">
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">
-                    Neuer Gruppen-Kommentar
+                <div className="pt-4 border-t border-primary-100">
+                  <h4 className="text-sm font-medium text-primary-700 mb-3">
+                    Neuer Kommentar
                   </h4>
                   <CommentForm
                     user={user}
@@ -574,30 +588,30 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
             </div>
           ) : selectedNode ? (
             /* Element Details View */
-            <div className="p-4 space-y-6">
+            <div className="space-y-4">
               {/* Element Details */}
-              <div className="bg-white border rounded-lg p-4">
+              <div className="card p-5">
                 <ElementDetails node={selectedNode} />
               </div>
 
               {/* Comments Section */}
-              <div className="bg-white border rounded-lg p-4">
+              <div className="card p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-gray-900">
+                  <h3 className="font-semibold text-primary-900">
                     Kommentare
                     {nodeComments.length > 0 && (
-                      <span className="ml-2 text-sm font-normal text-gray-500">
+                      <span className="ml-2 text-sm font-normal text-primary-500">
                         ({nodeComments.length})
                       </span>
                     )}
                   </h3>
 
                   <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-gray-400" />
+                    <Filter className="w-4 h-4 text-primary-400" />
                     <select
                       value={filterStatus}
                       onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
-                      className="text-sm border border-gray-300 rounded px-2 py-1"
+                      className="input-sm"
                     >
                       <option value="all">Alle</option>
                       <option value="open">Offen</option>
@@ -614,8 +628,8 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
                   onDelete={handleDelete}
                 />
 
-                <div className="mt-4 pt-4 border-t">
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">
+                <div className="mt-4 pt-4 border-t border-primary-100">
+                  <h4 className="text-sm font-medium text-primary-700 mb-3">
                     Neuer Kommentar
                   </h4>
                   <CommentForm
@@ -627,11 +641,13 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
               </div>
             </div>
           ) : (
-            <div className="h-full flex items-center justify-center text-gray-500">
+            <div className="h-full flex items-center justify-center">
               <div className="text-center">
-                <FileCode className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>Wählen Sie ein Element aus dem Schema</p>
-                <p className="text-sm mt-1">um Details und Kommentare zu sehen</p>
+                <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FileText className="w-8 h-8 text-primary-400" />
+                </div>
+                <p className="text-primary-700 font-medium">Wählen Sie ein Element</p>
+                <p className="text-sm text-primary-400 mt-1">um Details und Kommentare zu sehen</p>
               </div>
             </div>
           )}
