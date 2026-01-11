@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Copy, Check } from 'lucide-react';
 
 interface CodeViewerProps {
@@ -15,31 +15,13 @@ export default function CodeViewer({ content, filename }: CodeViewerProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Basic syntax highlighting for XML/XSD
-  const highlightXml = (code: string) => {
-    return code
-      // Comments
-      .replace(/(&lt;!--[\s\S]*?--&gt;)/g, '<span class="text-primary-400 italic">$1</span>')
-      // Tags
-      .replace(/(&lt;\/?)([\w:]+)/g, '$1<span class="text-primary-700 font-medium">$2</span>')
-      // Attribute names
-      .replace(/([\w:]+)=/g, '<span class="text-accent-600">$1</span>=')
-      // Attribute values
-      .replace(/="([^"]*)"/g, '="<span class="text-orange-600">$1</span>"');
-  };
-
-  // Escape HTML and apply highlighting
-  const escapedContent = content
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-
-  const highlightedContent = highlightXml(escapedContent);
+  // Split content into lines for line numbers
+  const lines = useMemo(() => content.split('\n'), [content]);
 
   return (
     <div className="h-full flex flex-col bg-white rounded-lg border border-primary-200 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 bg-primary-50 border-b border-primary-200">
+      <div className="flex items-center justify-between px-4 py-2 bg-primary-50 border-b border-primary-200 flex-shrink-0">
         <span className="text-sm font-medium text-primary-700">
           {filename || 'XSD Source'}
         </span>
@@ -61,11 +43,22 @@ export default function CodeViewer({ content, filename }: CodeViewerProps) {
         </button>
       </div>
 
-      {/* Code */}
+      {/* Code with line numbers */}
       <div className="flex-1 overflow-auto">
-        <pre className="p-4 text-xs font-mono leading-relaxed">
-          <code dangerouslySetInnerHTML={{ __html: highlightedContent }} />
-        </pre>
+        <table className="w-full text-xs font-mono">
+          <tbody>
+            {lines.map((line, index) => (
+              <tr key={index} className="hover:bg-primary-50">
+                <td className="px-3 py-0.5 text-right text-primary-300 select-none border-r border-primary-100 w-12">
+                  {index + 1}
+                </td>
+                <td className="px-3 py-0.5 whitespace-pre text-primary-800">
+                  {line || ' '}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
