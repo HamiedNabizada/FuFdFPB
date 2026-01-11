@@ -1,0 +1,47 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '16'
+
+      - name: Build Backend
+        run: |
+          cd backend
+          npm install
+          npm run build
+
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
+      - name: Upload Backend
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: srv29520.managed-pleskserver.de
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASS }}
+          local-dir: ./backend/dist/
+          server-dir: /FuFdFPB.fpbjs.net/backend/dist/
+
+      - name: Upload Frontend
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: srv29520.managed-pleskserver.de
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASS }}
+          local-dir: ./frontend/dist/
+          server-dir: /FuFdFPB.fpbjs.net/frontend/dist/
