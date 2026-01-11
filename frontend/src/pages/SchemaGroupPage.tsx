@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, FileText, FolderOpen, Filter, ChevronRight, MessageSquare, Reply, Trash2, Calendar, User as UserIcon, Download } from 'lucide-react';
+import { ArrowLeft, FileText, FolderOpen, Filter, ChevronRight, MessageSquare, Reply, Trash2, Calendar, User as UserIcon, Download, TreePine, Code } from 'lucide-react';
 import type { User } from '../App';
 import { parseXsd, type XsdNode } from '../lib/xsd-parser';
 import SchemaTree from '../components/SchemaTree';
 import SchemaSearch from '../components/SchemaSearch';
 import SchemaBreadcrumb from '../components/SchemaBreadcrumb';
+import CodeViewer from '../components/CodeViewer';
 import ElementDetails from '../components/ElementDetails';
 import CommentList, { type Comment } from '../components/CommentList';
 import CommentForm from '../components/CommentForm';
@@ -31,6 +32,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
   const [replyingToGroupComment, setReplyingToGroupComment] = useState<number | null>(null);
   const [groupReplyText, setGroupReplyText] = useState('');
   const [highlightedXpaths, setHighlightedXpaths] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<'tree' | 'code'>('tree');
 
   const handleHighlightChange = useCallback((xpaths: Set<string>) => {
     setHighlightedXpaths(xpaths);
@@ -473,13 +475,41 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
             </div>
           )}
 
-          {/* Schema Tree */}
-          <div className="flex-1 overflow-y-auto bg-white">
-            <div className="px-3 py-2 border-b border-primary-50 bg-primary-50 sticky top-0 z-10 space-y-2">
-              <h2 className="text-sm font-medium text-primary-700">
-                {selectedSchema ? selectedSchema.filename : 'Schema-Struktur'}
-              </h2>
-              {parsedSchema && (
+          {/* Schema Tree/Code */}
+          <div className="flex-1 flex flex-col overflow-hidden bg-white">
+            <div className="px-3 py-2 border-b border-primary-50 bg-primary-50 space-y-2 flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-medium text-primary-700">
+                  {selectedSchema ? selectedSchema.filename : 'Schema-Struktur'}
+                </h2>
+                {selectedSchema && (
+                  <div className="flex items-center bg-primary-100 rounded-lg p-0.5">
+                    <button
+                      onClick={() => setViewMode('tree')}
+                      className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-colors ${
+                        viewMode === 'tree'
+                          ? 'bg-white text-primary-700 shadow-sm'
+                          : 'text-primary-500 hover:text-primary-700'
+                      }`}
+                    >
+                      <TreePine className="w-3.5 h-3.5" />
+                      Baum
+                    </button>
+                    <button
+                      onClick={() => setViewMode('code')}
+                      className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-colors ${
+                        viewMode === 'code'
+                          ? 'bg-white text-primary-700 shadow-sm'
+                          : 'text-primary-500 hover:text-primary-700'
+                      }`}
+                    >
+                      <Code className="w-3.5 h-3.5" />
+                      Code
+                    </button>
+                  </div>
+                )}
+              </div>
+              {viewMode === 'tree' && parsedSchema && (
                 <SchemaSearch
                   rootNode={parsedSchema}
                   onSelectNode={setSelectedNode}
@@ -487,21 +517,31 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
                 />
               )}
             </div>
-            {parsedSchema ? (
-              <div className="py-2">
-                <SchemaTree
-                  node={parsedSchema}
-                  selectedNode={selectedNode}
-                  onSelectNode={setSelectedNode}
-                  commentCounts={commentCounts}
-                  highlightedXpaths={highlightedXpaths}
+
+            {viewMode === 'tree' ? (
+              parsedSchema ? (
+                <div className="flex-1 overflow-y-auto py-2">
+                  <SchemaTree
+                    node={parsedSchema}
+                    selectedNode={selectedNode}
+                    onSelectNode={setSelectedNode}
+                    commentCounts={commentCounts}
+                    highlightedXpaths={highlightedXpaths}
+                  />
+                </div>
+              ) : (
+                <div className="p-8 text-center text-primary-400 text-sm">
+                  {selectedSchema ? 'Schema konnte nicht geparst werden' : 'Keine Datei ausgewählt'}
+                </div>
+              )
+            ) : selectedSchema ? (
+              <div className="flex-1 overflow-hidden p-3">
+                <CodeViewer
+                  content={selectedSchema.content}
+                  filename={selectedSchema.filename}
                 />
               </div>
-            ) : (
-              <div className="p-8 text-center text-primary-400 text-sm">
-                {selectedSchema ? 'Schema konnte nicht geparst werden' : 'Keine Datei ausgewählt'}
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
 

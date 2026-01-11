@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, FileCode, Filter, Download } from 'lucide-react';
+import { ArrowLeft, FileCode, Filter, Download, TreePine, Code } from 'lucide-react';
 import type { User } from '../App';
 import { parseXsd, type XsdNode } from '../lib/xsd-parser';
 import SchemaTree from '../components/SchemaTree';
 import SchemaSearch from '../components/SchemaSearch';
 import SchemaBreadcrumb from '../components/SchemaBreadcrumb';
+import CodeViewer from '../components/CodeViewer';
 import ElementDetails from '../components/ElementDetails';
 import CommentList, { type Comment } from '../components/CommentList';
 import CommentForm from '../components/CommentForm';
@@ -35,6 +36,7 @@ export default function SchemaPage({ user }: SchemaPageProps) {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [submitting, setSubmitting] = useState(false);
   const [highlightedXpaths, setHighlightedXpaths] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<'tree' | 'code'>('tree');
 
   const handleHighlightChange = useCallback((xpaths: Set<string>) => {
     setHighlightedXpaths(xpaths);
@@ -251,29 +253,69 @@ export default function SchemaPage({ user }: SchemaPageProps) {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel - Tree */}
-        <div className="w-1/3 border-r bg-primary-50 overflow-y-auto">
-          <div className="p-3 border-b bg-white sticky top-0 z-10 space-y-2">
-            <h2 className="text-sm font-medium text-primary-700">Schema-Struktur</h2>
-            <SchemaSearch
-              rootNode={parsedSchema}
-              onSelectNode={setSelectedNode}
-              onHighlightChange={handleHighlightChange}
-            />
-          </div>
-          {parsedSchema ? (
-            <div className="py-2">
-              <SchemaTree
-                node={parsedSchema}
-                selectedNode={selectedNode}
-                onSelectNode={setSelectedNode}
-                commentCounts={commentCounts}
-                highlightedXpaths={highlightedXpaths}
-              />
+        {/* Left Panel - Tree/Code */}
+        <div className="w-1/3 border-r bg-primary-50 flex flex-col overflow-hidden">
+          <div className="p-3 border-b bg-white space-y-2 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-medium text-primary-700">
+                {viewMode === 'tree' ? 'Schema-Struktur' : 'XSD-Code'}
+              </h2>
+              <div className="flex items-center bg-primary-100 rounded-lg p-0.5">
+                <button
+                  onClick={() => setViewMode('tree')}
+                  className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-colors ${
+                    viewMode === 'tree'
+                      ? 'bg-white text-primary-700 shadow-sm'
+                      : 'text-primary-500 hover:text-primary-700'
+                  }`}
+                >
+                  <TreePine className="w-3.5 h-3.5" />
+                  Baum
+                </button>
+                <button
+                  onClick={() => setViewMode('code')}
+                  className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-colors ${
+                    viewMode === 'code'
+                      ? 'bg-white text-primary-700 shadow-sm'
+                      : 'text-primary-500 hover:text-primary-700'
+                  }`}
+                >
+                  <Code className="w-3.5 h-3.5" />
+                  Code
+                </button>
+              </div>
             </div>
+            {viewMode === 'tree' && (
+              <SchemaSearch
+                rootNode={parsedSchema}
+                onSelectNode={setSelectedNode}
+                onHighlightChange={handleHighlightChange}
+              />
+            )}
+          </div>
+
+          {viewMode === 'tree' ? (
+            parsedSchema ? (
+              <div className="flex-1 overflow-y-auto py-2">
+                <SchemaTree
+                  node={parsedSchema}
+                  selectedNode={selectedNode}
+                  onSelectNode={setSelectedNode}
+                  commentCounts={commentCounts}
+                  highlightedXpaths={highlightedXpaths}
+                />
+              </div>
+            ) : (
+              <div className="p-4 text-center text-primary-500 text-sm">
+                Schema konnte nicht geparst werden
+              </div>
+            )
           ) : (
-            <div className="p-4 text-center text-primary-500 text-sm">
-              Schema konnte nicht geparst werden
+            <div className="flex-1 overflow-hidden p-3">
+              <CodeViewer
+                content={schema?.content || ''}
+                filename={`${schema?.name}.xsd`}
+              />
             </div>
           )}
         </div>
