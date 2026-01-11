@@ -84,9 +84,9 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Name, Version und Inhalt erforderlich' });
     }
 
-    // Prüfen ob Version bereits existiert
-    const existing = await prisma.schema.findUnique({
-      where: { name_version: { name, version } }
+    // Prüfen ob Version bereits existiert (für Einzelschemas ohne Gruppe)
+    const existing = await prisma.schema.findFirst({
+      where: { name, version, groupId: null }
     });
 
     if (existing) {

@@ -41,3 +41,10 @@ ALTER TABLE `comments`
   ADD COLUMN IF NOT EXISTS `group_id` INT DEFAULT NULL,
   ADD INDEX IF NOT EXISTS `idx_comment_group_id` (`group_id`),
   ADD CONSTRAINT `fk_comments_group` FOREIGN KEY (`group_id`) REFERENCES `schema_groups`(`id`) ON DELETE CASCADE;
+
+-- 5. WICHTIG: Unique Constraint ändern für Gruppen-Support
+-- Alte Constraint entfernen und neue erstellen (name, version, group_id)
+-- Ermöglicht: gleicher Schema-Name in verschiedenen Gruppen
+ALTER TABLE `schemas`
+  DROP INDEX IF EXISTS `unique_schema_version`,
+  ADD UNIQUE KEY `unique_schema_version` (`name`, `version`, `group_id`);

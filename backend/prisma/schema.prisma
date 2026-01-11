@@ -65,7 +65,7 @@ model Schema {
   dependsOn    SchemaDependency[] @relation("DependencySource")
   dependedBy   SchemaDependency[] @relation("DependencyTarget")
 
-  @@unique([name, version])
+  @@unique([name, version, groupId])
   @@index([groupId])
   @@map("schemas")
 }
