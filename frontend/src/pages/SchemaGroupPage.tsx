@@ -1,9 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, FileText, FolderOpen, Filter, ChevronRight, MessageSquare, Reply, Trash2, Calendar, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, FileText, FolderOpen, Filter, ChevronRight, MessageSquare, Reply, Trash2, Calendar, User as UserIcon, Download } from 'lucide-react';
 import type { User } from '../App';
 import { parseXsd, type XsdNode } from '../lib/xsd-parser';
 import SchemaTree from '../components/SchemaTree';
+import SchemaSearch from '../components/SchemaSearch';
+import SchemaBreadcrumb from '../components/SchemaBreadcrumb';
 import ElementDetails from '../components/ElementDetails';
 import CommentList, { type Comment } from '../components/CommentList';
 import CommentForm from '../components/CommentForm';
@@ -28,6 +30,11 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
   const [schemaComments, setSchemaComments] = useState<Comment[]>([]);
   const [replyingToGroupComment, setReplyingToGroupComment] = useState<number | null>(null);
   const [groupReplyText, setGroupReplyText] = useState('');
+  const [highlightedXpaths, setHighlightedXpaths] = useState<Set<string>>(new Set());
+
+  const handleHighlightChange = useCallback((xpaths: Set<string>) => {
+    setHighlightedXpaths(xpaths);
+  }, []);
 
   // Ausgewähltes Schema
   const selectedSchema = useMemo(() => {
@@ -372,17 +379,37 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
               </div>
             </div>
           </div>
-          <button
-            onClick={() => setShowGroupComments(!showGroupComments)}
-            className={`ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              showGroupComments
-                ? 'bg-primary-100 text-primary-700'
-                : 'bg-primary-50 text-primary-600 hover:bg-primary-100'
-            }`}
-          >
-            <MessageSquare size={16} />
-            Diskussion ({group.comments.length})
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            {selectedSchema && (
+              <button
+                onClick={() => {
+                  const blob = new Blob([selectedSchema.content], { type: 'application/xml' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = selectedSchema.filename;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
+                           bg-primary-50 text-primary-600 hover:bg-primary-100 transition-colors"
+              >
+                <Download size={16} />
+                {selectedSchema.filename}
+              </button>
+            )}
+            <button
+              onClick={() => setShowGroupComments(!showGroupComments)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                showGroupComments
+                  ? 'bg-primary-100 text-primary-700'
+                  : 'bg-primary-50 text-primary-600 hover:bg-primary-100'
+              }`}
+            >
+              <MessageSquare size={16} />
+              Diskussion ({group.comments.length})
+            </button>
+          </div>
         </div>
       </div>
 
@@ -448,10 +475,17 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
 
           {/* Schema Tree */}
           <div className="flex-1 overflow-y-auto bg-white">
-            <div className="px-3 py-2 border-b border-primary-50 bg-primary-50 sticky top-0 z-10">
+            <div className="px-3 py-2 border-b border-primary-50 bg-primary-50 sticky top-0 z-10 space-y-2">
               <h2 className="text-sm font-medium text-primary-700">
                 {selectedSchema ? selectedSchema.filename : 'Schema-Struktur'}
               </h2>
+              {parsedSchema && (
+                <SchemaSearch
+                  rootNode={parsedSchema}
+                  onSelectNode={setSelectedNode}
+                  onHighlightChange={handleHighlightChange}
+                />
+              )}
             </div>
             {parsedSchema ? (
               <div className="py-2">
@@ -460,6 +494,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
                   selectedNode={selectedNode}
                   onSelectNode={setSelectedNode}
                   commentCounts={commentCounts}
+                  highlightedXpaths={highlightedXpaths}
                 />
               </div>
             ) : (
@@ -595,6 +630,12 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
           ) : selectedNode ? (
             /* Element Details View */
             <div className="space-y-4">
+              {/* Breadcrumb */}
+              <SchemaBreadcrumb
+                selectedNode={selectedNode}
+                onSelectNode={setSelectedNode}
+              />
+
               {/* Element Details */}
               <div className="card p-5">
                 <ElementDetails node={selectedNode} />

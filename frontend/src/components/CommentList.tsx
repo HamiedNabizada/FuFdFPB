@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { MessageCircle, Check, Reply, Trash2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import type { User } from '../App';
 
 export interface CommentReply {
@@ -67,12 +68,29 @@ export default function CommentList({
 
   if (comments.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="text-center py-8 text-primary-400">
         <MessageCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
         <p className="text-sm">Noch keine Kommentare</p>
       </div>
     );
   }
+
+  // Markdown component styling
+  const markdownComponents = {
+    p: ({ children }: { children?: React.ReactNode }) => <p className="mb-2 last:mb-0">{children}</p>,
+    code: ({ children }: { children?: React.ReactNode }) => (
+      <code className="bg-primary-100 text-primary-800 px-1.5 py-0.5 rounded text-xs font-mono">{children}</code>
+    ),
+    pre: ({ children }: { children?: React.ReactNode }) => (
+      <pre className="bg-primary-50 border border-primary-200 rounded-md p-3 overflow-x-auto my-2 text-xs">{children}</pre>
+    ),
+    ul: ({ children }: { children?: React.ReactNode }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+    ol: ({ children }: { children?: React.ReactNode }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+    a: ({ href, children }: { href?: string; children?: React.ReactNode }) => (
+      <a href={href} className="text-primary-600 hover:underline" target="_blank" rel="noopener noreferrer">{children}</a>
+    ),
+    strong: ({ children }: { children?: React.ReactNode }) => <strong className="font-semibold">{children}</strong>,
+  };
 
   return (
     <div className="space-y-4">
@@ -80,17 +98,17 @@ export default function CommentList({
         <div
           key={comment.id}
           className={`border rounded-lg p-4 ${
-            comment.status === 'resolved' ? 'bg-green-50 border-green-200' : 'bg-white'
+            comment.status === 'resolved' ? 'bg-accent-50 border-accent-200' : 'bg-white border-primary-200'
           }`}
         >
           {/* Comment Header */}
           <div className="flex items-start justify-between mb-2">
             <div>
-              <span className="font-medium text-gray-900">{getAuthorName(comment)}</span>
-              <span className="text-xs text-gray-500 ml-2">{formatDate(comment.createdAt)}</span>
+              <span className="font-medium text-primary-900">{getAuthorName(comment)}</span>
+              <span className="text-xs text-primary-500 ml-2">{formatDate(comment.createdAt)}</span>
             </div>
             {comment.status === 'resolved' && (
-              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <span className="text-xs bg-accent-100 text-accent-700 px-2 py-0.5 rounded-full flex items-center gap-1">
                 <Check className="w-3 h-3" />
                 Erledigt
               </span>
@@ -98,18 +116,22 @@ export default function CommentList({
           </div>
 
           {/* Comment Text */}
-          <p className="text-gray-700 text-sm mb-3">{comment.commentText}</p>
+          <div className="text-primary-700 text-sm mb-3 prose prose-sm max-w-none">
+            <ReactMarkdown components={markdownComponents}>{comment.commentText}</ReactMarkdown>
+          </div>
 
           {/* Replies */}
           {comment.replies.length > 0 && (
-            <div className="ml-4 border-l-2 border-gray-200 pl-4 space-y-3 mb-3">
+            <div className="ml-4 border-l-2 border-primary-200 pl-4 space-y-3 mb-3">
               {comment.replies.map((reply) => (
                 <div key={reply.id}>
-                  <div className="text-xs text-gray-500 mb-1">
-                    <span className="font-medium text-gray-700">{getAuthorName(reply)}</span>
+                  <div className="text-xs text-primary-500 mb-1">
+                    <span className="font-medium text-primary-700">{getAuthorName(reply)}</span>
                     <span className="ml-2">{formatDate(reply.createdAt)}</span>
                   </div>
-                  <p className="text-sm text-gray-600">{reply.replyText}</p>
+                  <div className="text-sm text-primary-600 prose prose-sm max-w-none">
+                    <ReactMarkdown components={markdownComponents}>{reply.replyText}</ReactMarkdown>
+                  </div>
                 </div>
               ))}
             </div>
@@ -124,39 +146,40 @@ export default function CommentList({
                   placeholder="Ihr Name"
                   value={replyAuthor}
                   onChange={(e) => setReplyAuthor(e.target.value)}
-                  className="w-full text-sm border border-gray-300 rounded px-3 py-1.5"
+                  className="input-sm"
                 />
               )}
               <textarea
-                placeholder="Antwort schreiben..."
+                placeholder="Antwort schreiben... (Markdown wird unterstützt)"
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
-                className="w-full text-sm border border-gray-300 rounded px-3 py-2 resize-none"
+                className="input text-sm resize-none"
                 rows={2}
               />
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleSubmitReply(comment.id)}
-                  className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700"
+                  className="btn-primary text-xs py-1.5"
                 >
                   Antworten
                 </button>
                 <button
                   onClick={() => setReplyingTo(null)}
-                  className="text-xs text-gray-600 px-3 py-1.5 hover:text-gray-800"
+                  className="btn-ghost text-xs"
                 >
                   Abbrechen
                 </button>
+                <span className="text-xs text-primary-400 ml-auto">Markdown unterstützt</span>
               </div>
             </div>
           )}
 
           {/* Actions */}
           {replyingTo !== comment.id && (
-            <div className="flex gap-3 mt-3 pt-3 border-t border-gray-100">
+            <div className="flex gap-3 mt-3 pt-3 border-t border-primary-100">
               <button
                 onClick={() => setReplyingTo(comment.id)}
-                className="text-xs text-gray-600 hover:text-blue-600 flex items-center gap-1"
+                className="text-xs text-primary-500 hover:text-primary-700 flex items-center gap-1"
               >
                 <Reply className="w-3.5 h-3.5" />
                 Antworten
@@ -164,7 +187,7 @@ export default function CommentList({
               {comment.status === 'open' && (
                 <button
                   onClick={() => onResolve(comment.id)}
-                  className="text-xs text-gray-600 hover:text-green-600 flex items-center gap-1"
+                  className="text-xs text-primary-500 hover:text-accent-600 flex items-center gap-1"
                 >
                   <Check className="w-3.5 h-3.5" />
                   Als erledigt markieren
@@ -173,7 +196,7 @@ export default function CommentList({
               {user && (
                 <button
                   onClick={() => onDelete(comment.id)}
-                  className="text-xs text-gray-600 hover:text-red-600 flex items-center gap-1 ml-auto"
+                  className="text-xs text-primary-400 hover:text-red-600 flex items-center gap-1 ml-auto"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>

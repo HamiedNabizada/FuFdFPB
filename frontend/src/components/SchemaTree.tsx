@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronRight, ChevronDown, MessageCircle } from 'lucide-react';
 import type { XsdNode } from '../lib/xsd-parser';
 import { getNodeTypeColor } from '../lib/xsd-parser';
@@ -8,6 +8,7 @@ interface SchemaTreeProps {
   selectedNode: XsdNode | null;
   onSelectNode: (node: XsdNode) => void;
   commentCounts: Record<string, number>;
+  highlightedXpaths?: Set<string>;
   level?: number;
 }
 
@@ -16,12 +17,27 @@ export default function SchemaTree({
   selectedNode,
   onSelectNode,
   commentCounts,
+  highlightedXpaths,
   level = 0,
 }: SchemaTreeProps) {
   const [expanded, setExpanded] = useState(level < 2);
   const hasChildren = node.children.length > 0;
   const isSelected = selectedNode?.xpath === node.xpath;
+  const isHighlighted = highlightedXpaths?.has(node.xpath);
   const commentCount = commentCounts[node.xpath] || 0;
+
+  // Check if any descendant is highlighted (to auto-expand)
+  const hasHighlightedDescendant = (n: XsdNode): boolean => {
+    if (highlightedXpaths?.has(n.xpath)) return true;
+    return n.children.some(child => hasHighlightedDescendant(child));
+  };
+
+  // Auto-expand when descendants are highlighted
+  useEffect(() => {
+    if (highlightedXpaths && highlightedXpaths.size > 0 && hasHighlightedDescendant(node)) {
+      setExpanded(true);
+    }
+  }, [highlightedXpaths]);
 
   // Filter out annotation nodes for cleaner display
   const visibleChildren = node.children.filter(
@@ -41,9 +57,9 @@ export default function SchemaTree({
   return (
     <div className="select-none">
       <div
-        className={`flex items-center gap-1 py-1 px-2 rounded cursor-pointer hover:bg-gray-100 ${
-          isSelected ? 'bg-blue-100 hover:bg-blue-100' : ''
-        }`}
+        className={`flex items-center gap-1 py-1 px-2 rounded cursor-pointer transition-colors
+          ${isSelected ? 'bg-primary-100 hover:bg-primary-100' : 'hover:bg-primary-50'}
+          ${isHighlighted && !isSelected ? 'bg-accent-50 ring-1 ring-accent-300' : ''}`}
         style={{ paddingLeft: `${level * 16 + 8}px` }}
         onClick={handleClick}
       >
@@ -51,14 +67,14 @@ export default function SchemaTree({
         <button
           onClick={handleToggle}
           className={`w-5 h-5 flex items-center justify-center ${
-            hasChildren ? 'hover:bg-gray-200 rounded' : ''
+            hasChildren ? 'hover:bg-primary-100 rounded' : ''
           }`}
         >
           {hasChildren ? (
             expanded ? (
-              <ChevronDown className="w-4 h-4 text-gray-500" />
+              <ChevronDown className="w-4 h-4 text-primary-400" />
             ) : (
-              <ChevronRight className="w-4 h-4 text-gray-500" />
+              <ChevronRight className="w-4 h-4 text-primary-400" />
             )
           ) : (
             <span className="w-4" />
@@ -71,7 +87,7 @@ export default function SchemaTree({
         </span>
 
         {/* Node Name */}
-        <span className="text-sm font-medium text-gray-800 truncate">
+        <span className="text-sm font-medium text-primary-800 truncate">
           {node.name || '(unnamed)'}
         </span>
 
@@ -94,6 +110,7 @@ export default function SchemaTree({
               selectedNode={selectedNode}
               onSelectNode={onSelectNode}
               commentCounts={commentCounts}
+              highlightedXpaths={highlightedXpaths}
               level={level + 1}
             />
           ))}

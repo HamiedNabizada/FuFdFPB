@@ -8,11 +8,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "fast-xml-parser": "^4.3.2",
+    "lucide-react": "^0.303.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.21.1",
-    "fast-xml-parser": "^4.3.2",
-    "lucide-react": "^0.303.0"
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^6.21.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.46",

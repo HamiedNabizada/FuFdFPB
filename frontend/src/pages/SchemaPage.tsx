@@ -1,9 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, FileCode, Filter } from 'lucide-react';
+import { ArrowLeft, FileCode, Filter, Download } from 'lucide-react';
 import type { User } from '../App';
 import { parseXsd, type XsdNode } from '../lib/xsd-parser';
 import SchemaTree from '../components/SchemaTree';
+import SchemaSearch from '../components/SchemaSearch';
+import SchemaBreadcrumb from '../components/SchemaBreadcrumb';
 import ElementDetails from '../components/ElementDetails';
 import CommentList, { type Comment } from '../components/CommentList';
 import CommentForm from '../components/CommentForm';
@@ -32,6 +34,11 @@ export default function SchemaPage({ user }: SchemaPageProps) {
   const [selectedNode, setSelectedNode] = useState<XsdNode | null>(null);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [submitting, setSubmitting] = useState(false);
+  const [highlightedXpaths, setHighlightedXpaths] = useState<Set<string>>(new Set());
+
+  const handleHighlightChange = useCallback((xpaths: Set<string>) => {
+    setHighlightedXpaths(xpaths);
+  }, []);
 
   // Parse XSD content to tree structure
   const parsedSchema = useMemo(() => {
@@ -208,31 +215,51 @@ export default function SchemaPage({ user }: SchemaPageProps) {
   return (
     <div className="h-screen flex flex-col">
       {/* Header */}
-      <div className="flex-shrink-0 bg-white border-b px-4 py-3">
+      <div className="flex-shrink-0 bg-white border-b border-primary-100 px-4 py-3">
         <div className="flex items-center gap-4">
-          <Link to="/" className="text-gray-500 hover:text-gray-700">
+          <Link to="/" className="text-primary-400 hover:text-primary-600">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div className="flex items-center gap-2">
-            <FileCode className="w-5 h-5 text-blue-600" />
-            <h1 className="font-semibold text-gray-900">{schema.name}</h1>
-            <span className="text-sm font-mono bg-gray-100 px-2 py-0.5 rounded">
+            <FileCode className="w-5 h-5 text-primary-600" />
+            <h1 className="font-semibold text-primary-900">{schema.name}</h1>
+            <span className="badge-primary font-mono">
               v{schema.version}
             </span>
           </div>
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-primary-500">
             von {schema.uploadedBy} am{' '}
             {new Date(schema.createdAt).toLocaleDateString('de-DE')}
           </span>
+          <button
+            onClick={() => {
+              const blob = new Blob([schema.content], { type: 'application/xml' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `${schema.name}_v${schema.version}.xsd`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="ml-auto btn-secondary text-sm"
+          >
+            <Download className="w-4 h-4" />
+            Download
+          </button>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - Tree */}
-        <div className="w-1/3 border-r bg-gray-50 overflow-y-auto">
-          <div className="p-2 border-b bg-white sticky top-0">
-            <h2 className="text-sm font-medium text-gray-700">Schema-Struktur</h2>
+        <div className="w-1/3 border-r bg-primary-50 overflow-y-auto">
+          <div className="p-3 border-b bg-white sticky top-0 z-10 space-y-2">
+            <h2 className="text-sm font-medium text-primary-700">Schema-Struktur</h2>
+            <SchemaSearch
+              rootNode={parsedSchema}
+              onSelectNode={setSelectedNode}
+              onHighlightChange={handleHighlightChange}
+            />
           </div>
           {parsedSchema ? (
             <div className="py-2">
@@ -241,31 +268,38 @@ export default function SchemaPage({ user }: SchemaPageProps) {
                 selectedNode={selectedNode}
                 onSelectNode={setSelectedNode}
                 commentCounts={commentCounts}
+                highlightedXpaths={highlightedXpaths}
               />
             </div>
           ) : (
-            <div className="p-4 text-center text-gray-500 text-sm">
+            <div className="p-4 text-center text-primary-500 text-sm">
               Schema konnte nicht geparst werden
             </div>
           )}
         </div>
 
         {/* Right Panel - Details & Comments */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto bg-primary-50">
           {selectedNode ? (
-            <div className="p-4 space-y-6">
+            <div className="p-4 space-y-4">
+              {/* Breadcrumb */}
+              <SchemaBreadcrumb
+                selectedNode={selectedNode}
+                onSelectNode={setSelectedNode}
+              />
+
               {/* Element Details */}
-              <div className="bg-white border rounded-lg p-4">
+              <div className="card p-4">
                 <ElementDetails node={selectedNode} />
               </div>
 
               {/* Comments Section */}
-              <div className="bg-white border rounded-lg p-4">
+              <div className="card p-4">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-gray-900">
+                  <h3 className="font-semibold text-primary-900">
                     Kommentare
                     {nodeComments.length > 0 && (
-                      <span className="ml-2 text-sm font-normal text-gray-500">
+                      <span className="ml-2 text-sm font-normal text-primary-500">
                         ({nodeComments.length})
                       </span>
                     )}
