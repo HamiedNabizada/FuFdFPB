@@ -34,10 +34,10 @@ jobs:
           lftp -u ${{ secrets.FTP_USER }},${{ secrets.FTP_PASS }} srv29520.managed-pleskserver.de <<EOF
           set ssl:verify-certificate no
           set ftp:passive-mode yes
-          mirror -R --verbose --ignore-time ./backend/dist/ /backend/dist/
+          mirror -R --verbose --delete ./backend/dist/ /backend/dist/
           put ./backend/package.json -o /backend/package.json
           put ./backend/package-lock.json -o /backend/package-lock.json
-          mirror -R --verbose --ignore-time ./backend/prisma/ /backend/prisma/
-          mirror -R --verbose --ignore-time ./frontend/dist/ /frontend/dist/
+          mirror -R --verbose --delete ./backend/prisma/ /backend/prisma/
+          mirror -R --verbose --delete ./frontend/dist/ /frontend/dist/
           quit
           EOF
