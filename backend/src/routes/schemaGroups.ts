@@ -116,9 +116,13 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
         }))
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Fehler beim Erstellen der Schema-Gruppe:', error);
-    res.status(500).json({ error: 'Interner Serverfehler' });
+    res.status(500).json({
+      error: 'Interner Serverfehler',
+      details: error?.message || String(error),
+      code: error?.code
+    });
   }
 });
 
