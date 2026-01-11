@@ -75,7 +75,7 @@ export default function SchemaPage({ user }: SchemaPageProps) {
       }
       const data = await res.json();
       setSchema(data.schema);
-      setComments(data.comments || []);
+      setComments(data.schema.comments || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Fehler beim Laden');
     } finally {
