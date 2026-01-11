@@ -82,16 +82,15 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
   // Kommentare laden wenn Schema ausgewählt wird
   useEffect(() => {
     if (selectedSchemaId) {
-      fetchSchemaComments();
+      fetchSchemaComments(selectedSchemaId);
     } else {
       setSchemaComments([]);
     }
   }, [selectedSchemaId]);
 
-  const fetchSchemaComments = async () => {
-    if (!selectedSchemaId) return;
+  const fetchSchemaComments = async (schemaId: number) => {
     try {
-      const res = await fetch(`/api/comments/schema/${selectedSchemaId}`);
+      const res = await fetch(`/api/comments/schema/${schemaId}`);
       if (res.ok) {
         const data = await res.json();
         setSchemaComments(data.comments || []);
@@ -223,7 +222,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
       });
 
       if (res.ok) {
-        fetchSchemaComments();
+        if (selectedSchemaId) fetchSchemaComments(selectedSchemaId);
       } else {
         const data = await res.json();
         alert(data.error || 'Kommentar konnte nicht gespeichert werden');
@@ -250,7 +249,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
       });
 
       if (res.ok) {
-        fetchSchemaComments();
+        if (selectedSchemaId) fetchSchemaComments(selectedSchemaId);
       }
     } catch (err) {
       console.error('Error resolving comment:', err);
@@ -274,7 +273,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
       });
 
       if (res.ok) {
-        fetchSchemaComments();
+        if (selectedSchemaId) fetchSchemaComments(selectedSchemaId);
       }
     } catch (err) {
       console.error('Error adding reply:', err);
@@ -295,7 +294,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
       });
 
       if (res.ok) {
-        fetchSchemaComments();
+        if (selectedSchemaId) fetchSchemaComments(selectedSchemaId);
       }
     } catch (err) {
       console.error('Error deleting comment:', err);
