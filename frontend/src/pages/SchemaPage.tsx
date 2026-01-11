@@ -332,7 +332,7 @@ export default function SchemaPage({ user }: SchemaPageProps) {
 
               {/* Element Details */}
               <div className="card p-4">
-                <ElementDetails node={selectedNode} />
+                <ElementDetails node={selectedNode} schemaContent={schema?.content} />
               </div>
 
               {/* Comments Section */}

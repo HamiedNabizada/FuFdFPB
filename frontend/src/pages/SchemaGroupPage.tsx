@@ -678,7 +678,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
 
               {/* Element Details */}
               <div className="card p-5">
-                <ElementDetails node={selectedNode} />
+                <ElementDetails node={selectedNode} schemaContent={selectedSchema?.content} />
               </div>
 
               {/* Comments Section */}
