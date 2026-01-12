@@ -1,25 +1,28 @@
 import { useState } from 'react';
 import { Send } from 'lucide-react';
 import type { User } from '../App';
+import { CATEGORIES, CATEGORY_OPTIONS, type CommentCategory } from '../lib/categories';
 
 interface CommentFormProps {
   user: User | null;
-  onSubmit: (text: string, authorName?: string) => void;
+  onSubmit: (text: string, authorName?: string, category?: CommentCategory) => void;
   disabled?: boolean;
 }
 
 export default function CommentForm({ user, onSubmit, disabled }: CommentFormProps) {
   const [text, setText] = useState('');
   const [authorName, setAuthorName] = useState('');
+  const [category, setCategory] = useState<CommentCategory>('technical');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim()) return;
     if (!user && !authorName.trim()) return;
 
-    onSubmit(text, user ? undefined : authorName);
+    onSubmit(text, user ? undefined : authorName, category);
     setText('');
     setAuthorName('');
+    setCategory('technical');
   };
 
   return (
@@ -34,6 +37,26 @@ export default function CommentForm({ user, onSubmit, disabled }: CommentFormPro
           className="input"
         />
       )}
+
+      {/* Kategorie-Auswahl */}
+      <div className="flex flex-wrap gap-2">
+        {CATEGORY_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => setCategory(opt.value)}
+            disabled={disabled}
+            className={`text-xs px-2.5 py-1.5 rounded-full transition-colors ${
+              category === opt.value
+                ? `${CATEGORIES[opt.value].bgColor} ${CATEGORIES[opt.value].color} ring-2 ring-offset-1 ring-primary-300`
+                : 'bg-primary-50 text-primary-600 hover:bg-primary-100'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
       <textarea
         placeholder="Kommentar hinzufügen..."
         value={text}

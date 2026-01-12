@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle, CheckCircle, Clock, TrendingUp, X, FileText, ExternalLink } from 'lucide-react';
+import { MessageCircle, CheckCircle, Clock, TrendingUp, X, FileText, ExternalLink, Filter } from 'lucide-react';
+import { CATEGORIES, CATEGORY_OPTIONS, type CommentCategory } from '../lib/categories';
 
 interface Stats {
   total: number;
@@ -15,6 +16,7 @@ interface CommentItem {
   elementName: string | null;
   xpath: string | null;
   status: 'open' | 'resolved';
+  category?: CommentCategory;
   createdAt: string;
   author: { name: string } | null;
   authorName: string | null;
@@ -29,6 +31,7 @@ export default function ReviewStats() {
   const [showModal, setShowModal] = useState<'open' | 'resolved' | null>(null);
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<CommentCategory | 'all'>('all');
 
   useEffect(() => {
     fetchStats();
@@ -48,10 +51,11 @@ export default function ReviewStats() {
     }
   };
 
-  const fetchComments = async (status: 'open' | 'resolved') => {
+  const fetchComments = async (status: 'open' | 'resolved', category?: CommentCategory | 'all') => {
     setLoadingComments(true);
     try {
-      const res = await fetch(`/api/comments/by-status/${status}`);
+      const categoryParam = category && category !== 'all' ? `?category=${category}` : '';
+      const res = await fetch(`/api/comments/by-status/${status}${categoryParam}`);
       if (res.ok) {
         const data = await res.json();
         setComments(data.comments);
@@ -65,12 +69,21 @@ export default function ReviewStats() {
 
   const handleCardClick = (status: 'open' | 'resolved') => {
     setShowModal(status);
-    fetchComments(status);
+    setCategoryFilter('all');
+    fetchComments(status, 'all');
+  };
+
+  const handleCategoryFilter = (category: CommentCategory | 'all') => {
+    setCategoryFilter(category);
+    if (showModal) {
+      fetchComments(showModal, category);
+    }
   };
 
   const closeModal = () => {
     setShowModal(null);
     setComments([]);
+    setCategoryFilter('all');
   };
 
   const getCommentLink = (comment: CommentItem) => {
@@ -193,6 +206,36 @@ export default function ReviewStats() {
               </button>
             </div>
 
+            {/* Category Filter - nur bei offenen Kommentaren */}
+            {showModal === 'open' && (
+              <div className="px-4 py-3 border-b border-primary-100 flex items-center gap-2 flex-wrap">
+                <Filter className="w-4 h-4 text-primary-400" />
+                <button
+                  onClick={() => handleCategoryFilter('all')}
+                  className={`text-xs px-2.5 py-1 rounded-full transition-colors ${
+                    categoryFilter === 'all'
+                      ? 'bg-primary-200 text-primary-800'
+                      : 'bg-primary-50 text-primary-600 hover:bg-primary-100'
+                  }`}
+                >
+                  Alle
+                </button>
+                {CATEGORY_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => handleCategoryFilter(opt.value)}
+                    className={`text-xs px-2.5 py-1 rounded-full transition-colors ${
+                      categoryFilter === opt.value
+                        ? `${CATEGORIES[opt.value].bgColor} ${CATEGORIES[opt.value].color}`
+                        : 'bg-primary-50 text-primary-600 hover:bg-primary-100'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Modal Content */}
             <div className="flex-1 overflow-y-auto p-4">
               {loadingComments ? (
@@ -212,7 +255,7 @@ export default function ReviewStats() {
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <FileText className="w-4 h-4 text-primary-400 flex-shrink-0" />
                             <span className="text-sm font-medium text-primary-700 truncate">
                               {getCommentLocation(comment)}
@@ -220,6 +263,11 @@ export default function ReviewStats() {
                             {comment.elementName && (
                               <span className="text-xs bg-primary-200 text-primary-700 px-1.5 py-0.5 rounded">
                                 {comment.elementName}
+                              </span>
+                            )}
+                            {comment.category && CATEGORIES[comment.category] && (
+                              <span className={`text-xs px-1.5 py-0.5 rounded-full ${CATEGORIES[comment.category].bgColor} ${CATEGORIES[comment.category].color}`}>
+                                {CATEGORIES[comment.category].icon} {CATEGORIES[comment.category].label}
                               </span>
                             )}
                           </div>

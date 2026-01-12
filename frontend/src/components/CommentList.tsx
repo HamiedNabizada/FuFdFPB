@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { MessageCircle, Check, Reply, Trash2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { User } from '../App';
+import { CATEGORIES, type CommentCategory } from '../lib/categories';
 
 export interface CommentReply {
   id: number;
@@ -19,6 +20,7 @@ export interface Comment {
   authorName: string | null;
   author: { name: string } | null;
   status: 'open' | 'resolved';
+  category?: CommentCategory;
   createdAt: string;
   replies: CommentReply[];
 }
@@ -103,9 +105,14 @@ export default function CommentList({
         >
           {/* Comment Header */}
           <div className="flex items-start justify-between mb-2">
-            <div>
+            <div className="flex items-center gap-2">
               <span className="font-medium text-primary-900">{getAuthorName(comment)}</span>
-              <span className="text-xs text-primary-500 ml-2">{formatDate(comment.createdAt)}</span>
+              {comment.category && CATEGORIES[comment.category] && (
+                <span className={`text-xs px-2 py-0.5 rounded-full ${CATEGORIES[comment.category].bgColor} ${CATEGORIES[comment.category].color}`}>
+                  {CATEGORIES[comment.category].icon} {CATEGORIES[comment.category].label}
+                </span>
+              )}
+              <span className="text-xs text-primary-500">{formatDate(comment.createdAt)}</span>
             </div>
             {comment.status === 'resolved' && (
               <span className="text-xs bg-accent-100 text-accent-700 px-2 py-0.5 rounded-full flex items-center gap-1">

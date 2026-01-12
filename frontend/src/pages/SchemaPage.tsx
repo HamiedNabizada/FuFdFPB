@@ -105,7 +105,7 @@ export default function SchemaPage({ user }: SchemaPageProps) {
     }
   };
 
-  const handleAddComment = async (text: string, authorName?: string) => {
+  const handleAddComment = async (text: string, authorName?: string, category?: string) => {
     if (!selectedNode || !schema) return;
 
     setSubmitting(true);
@@ -122,6 +122,7 @@ export default function SchemaPage({ user }: SchemaPageProps) {
           elementName: selectedNode.name,
           commentText: text,
           authorName,
+          category: category || 'technical',
         }),
       });
 

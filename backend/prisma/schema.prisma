@@ -99,6 +99,7 @@ model Comment {
   authorId    Int?      @map("author_id")
   authorName  String?   @map("author_name") @db.VarChar(255)
   status      CommentStatus @default(open)
+  category    CommentCategory @default(technical)
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
@@ -130,4 +131,12 @@ model Reply {
 enum CommentStatus {
   open
   resolved
+}
+
+enum CommentCategory {
+  editorial    // Redaktionell
+  technical    // Technisch
+  question     // Frage
+  discussion   // Diskussion
+  error        // Fehler
 }

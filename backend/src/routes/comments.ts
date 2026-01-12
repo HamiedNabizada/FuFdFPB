@@ -67,7 +67,7 @@ router.post('/', optionalAuthMiddleware, async (req: Request, res: Response) => 
   try {
     const prisma: PrismaClient = (req as any).prisma;
     const userId = (req as any).userId;
-    const { schemaId, xpath, elementName, commentText, authorName } = req.body;
+    const { schemaId, xpath, elementName, commentText, authorName, category } = req.body;
 
     if (!schemaId || !xpath || !commentText) {
       return res.status(400).json({ error: 'SchemaId, XPath und Kommentartext erforderlich' });
@@ -78,6 +78,10 @@ router.post('/', optionalAuthMiddleware, async (req: Request, res: Response) => 
       return res.status(400).json({ error: 'Name erforderlich (oder einloggen)' });
     }
 
+    // Kategorie validieren
+    const validCategories = ['editorial', 'technical', 'question', 'discussion', 'error'];
+    const commentCategory = validCategories.includes(category) ? category : 'technical';
+
     const comment = await prisma.comment.create({
       data: {
         schemaId: parseInt(schemaId),
@@ -85,7 +89,8 @@ router.post('/', optionalAuthMiddleware, async (req: Request, res: Response) => 
         elementName,
         commentText,
         authorId: userId || null,
-        authorName: authorName || null
+        authorName: authorName || null,
+        category: commentCategory
       },
       include: {
         author: { select: { name: true } },
@@ -233,13 +238,21 @@ router.get('/by-status/:status', async (req: Request, res: Response) => {
   try {
     const prisma: PrismaClient = (req as any).prisma;
     const { status } = req.params;
+    const { category } = req.query;
 
     if (!['open', 'resolved'].includes(status)) {
       return res.status(400).json({ error: 'Status muss "open" oder "resolved" sein' });
     }
 
+    const validCategories = ['editorial', 'technical', 'question', 'discussion', 'error'];
+    const whereClause: any = { status: status as 'open' | 'resolved' };
+
+    if (category && validCategories.includes(category as string)) {
+      whereClause.category = category as string;
+    }
+
     const comments = await prisma.comment.findMany({
-      where: { status: status as 'open' | 'resolved' },
+      where: whereClause,
       include: {
         author: { select: { name: true } },
         schema: { select: { id: true, name: true, version: true, groupId: true } },

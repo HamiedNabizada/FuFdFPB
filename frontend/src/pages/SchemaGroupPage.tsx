@@ -179,7 +179,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
     }
   };
 
-  const handleAddGroupComment = async (text: string, authorName?: string) => {
+  const handleAddGroupComment = async (text: string, authorName?: string, category?: string) => {
     if (!group) return;
 
     setSubmitting(true);
@@ -194,6 +194,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
         body: JSON.stringify({
           commentText: text,
           authorName,
+          category: category || 'technical',
         }),
       });
 
@@ -264,7 +265,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
   };
 
   // Element-Kommentar hinzufügen
-  const handleAddElementComment = async (text: string, authorName?: string) => {
+  const handleAddElementComment = async (text: string, authorName?: string, category?: string) => {
     if (!selectedSchemaId || !selectedNode) return;
 
     setSubmitting(true);
@@ -282,6 +283,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
           elementName: selectedNode.name,
           commentText: text,
           authorName,
+          category: category || 'technical',
         }),
       });
 
