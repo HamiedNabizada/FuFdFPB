@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, FileText, FolderOpen, Filter, ChevronRight, MessageSquare, Reply, Trash2, Calendar, User as UserIcon, Download, TreePine, Code } from 'lucide-react';
+import { ArrowLeft, FileText, FolderOpen, Filter, ChevronRight, MessageSquare, Reply, Trash2, Calendar, User as UserIcon, Download, TreePine, Code, Network } from 'lucide-react';
 import type { User } from '../App';
 import { parseXsd, type XsdNode } from '../lib/xsd-parser';
 import { exportGroupCommentsToMarkdown, downloadMarkdown } from '../lib/export-comments';
@@ -12,6 +12,7 @@ import ElementDetails from '../components/ElementDetails';
 import CommentList, { type Comment } from '../components/CommentList';
 import CommentForm from '../components/CommentForm';
 import TagEditor from '../components/TagEditor';
+import DependencyGraph from '../components/DependencyGraph';
 import type { SchemaGroupDetail } from '../types/schemaGroup';
 
 interface SchemaGroupPageProps {
@@ -35,6 +36,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
   const [groupReplyText, setGroupReplyText] = useState('');
   const [highlightedXpaths, setHighlightedXpaths] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'tree' | 'code'>('tree');
+  const [showGraph, setShowGraph] = useState(true);
 
   const handleHighlightChange = useCallback((xpaths: Set<string>) => {
     setHighlightedXpaths(xpaths);
@@ -473,6 +475,34 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - File List & Tree */}
         <div className="w-1/3 border-r border-primary-100 bg-white flex flex-col overflow-hidden">
+          {/* Dependency Graph */}
+          {group.schemas.length > 1 && (
+            <div className="flex-shrink-0 border-b border-primary-100">
+              <button
+                onClick={() => setShowGraph(!showGraph)}
+                className="w-full px-3 py-2 border-b border-primary-50 bg-primary-50 flex items-center justify-between hover:bg-primary-100 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Network className="w-4 h-4 text-primary-500" />
+                  <h2 className="text-sm font-medium text-primary-700">Abhängigkeitsgraph</h2>
+                </div>
+                <ChevronRight className={`w-4 h-4 text-primary-400 transition-transform ${showGraph ? 'rotate-90' : ''}`} />
+              </button>
+              {showGraph && (
+                <div className="p-2">
+                  <DependencyGraph
+                    group={group}
+                    selectedSchemaId={selectedSchemaId}
+                    onSelectSchema={(id) => {
+                      setSelectedSchemaId(id);
+                      setSelectedNode(null);
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
           {/* File List */}
           <div className="flex-shrink-0 border-b border-primary-100">
             <div className="px-3 py-2 border-b border-primary-50 bg-primary-50">
