@@ -5,6 +5,7 @@ export interface SchemaGroup {
   name: string;
   version: string;
   description?: string;
+  tags?: string[];
   uploadedBy: string;
   createdAt: string;
   commentCount: number;
@@ -55,6 +56,7 @@ export interface GroupReply {
 }
 
 export interface SchemaGroupDetail extends SchemaGroup {
+  tags?: string[];
   schemas: (SchemaInGroup & {
     content: string;
     dependencies: SchemaDependency[];

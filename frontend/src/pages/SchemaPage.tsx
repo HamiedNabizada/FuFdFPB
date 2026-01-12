@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, FileCode, Filter, Download, TreePine, Code } from 'lucide-react';
+import { ArrowLeft, FileCode, Filter, Download, TreePine, Code, FileText } from 'lucide-react';
 import type { User } from '../App';
 import { parseXsd, type XsdNode } from '../lib/xsd-parser';
+import { exportCommentsToMarkdown, downloadMarkdown } from '../lib/export-comments';
 import SchemaTree from '../components/SchemaTree';
 import SchemaSearch from '../components/SchemaSearch';
 import SchemaBreadcrumb from '../components/SchemaBreadcrumb';
@@ -233,21 +234,39 @@ export default function SchemaPage({ user }: SchemaPageProps) {
             von {schema.uploadedBy} am{' '}
             {new Date(schema.createdAt).toLocaleDateString('de-DE')}
           </span>
-          <button
-            onClick={() => {
-              const blob = new Blob([schema.content], { type: 'application/xml' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `${schema.name}_v${schema.version}.xsd`;
-              a.click();
-              URL.revokeObjectURL(url);
-            }}
-            className="ml-auto btn-secondary text-sm"
-          >
-            <Download className="w-4 h-4" />
-            Download
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            {comments.length > 0 && (
+              <button
+                onClick={() => {
+                  const markdown = exportCommentsToMarkdown(comments, {
+                    schemaName: schema.name,
+                    schemaVersion: schema.version,
+                  });
+                  downloadMarkdown(markdown, `${schema.name}_v${schema.version}_kommentare.md`);
+                }}
+                className="btn-secondary text-sm"
+                title="Kommentare als Markdown exportieren"
+              >
+                <FileText className="w-4 h-4" />
+                Export
+              </button>
+            )}
+            <button
+              onClick={() => {
+                const blob = new Blob([schema.content], { type: 'application/xml' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${schema.name}_v${schema.version}.xsd`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="btn-secondary text-sm"
+            >
+              <Download className="w-4 h-4" />
+              Download
+            </button>
+          </div>
         </div>
       </div>
 

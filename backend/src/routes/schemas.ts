@@ -182,4 +182,34 @@ router.get('/by-name/:name', async (req: Request, res: Response) => {
   }
 });
 
+// PATCH /api/schemas/:id/tags - Tags aktualisieren
+router.patch('/:id/tags', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const prisma: PrismaClient = (req as any).prisma;
+    const schemaId = parseInt(req.params.id);
+    const { tags } = req.body as { tags: string[] };
+
+    const schema = await prisma.schema.findUnique({ where: { id: schemaId } });
+    if (!schema) {
+      return res.status(404).json({ error: 'Schema nicht gefunden' });
+    }
+
+    // Tags als komma-getrennter String speichern (max 500 Zeichen)
+    const tagsString = tags?.filter(t => t.trim()).join(',').substring(0, 500) || null;
+
+    const updated = await prisma.schema.update({
+      where: { id: schemaId },
+      data: { tags: tagsString }
+    });
+
+    res.json({
+      message: 'Tags aktualisiert',
+      tags: updated.tags ? updated.tags.split(',') : []
+    });
+  } catch (error) {
+    console.error('Update tags error:', error);
+    res.status(500).json({ error: 'Fehler beim Aktualisieren der Tags' });
+  }
+});
+
 export default router;

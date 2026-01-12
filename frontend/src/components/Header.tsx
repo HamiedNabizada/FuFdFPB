@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { LogOut, LogIn, User as UserIcon } from 'lucide-react';
 import type { User } from '../App';
+import ThemeToggle from './ThemeToggle';
 
 interface HeaderProps {
   user: User | null;
@@ -9,7 +10,7 @@ interface HeaderProps {
 
 export default function Header({ user, onLogout }: HeaderProps) {
   return (
-    <header className="bg-primary-900 sticky top-0 z-50">
+    <header className="bg-primary-900 dark:bg-primary-950 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo & Title */}
@@ -41,6 +42,9 @@ export default function Header({ user, onLogout }: HeaderProps) {
 
           {/* User Section */}
           <div className="flex items-center gap-2">
+            {/* Theme Toggle */}
+            <ThemeToggle />
+
             {user ? (
               <>
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-lg">

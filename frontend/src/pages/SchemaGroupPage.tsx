@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, FileText, FolderOpen, Filter, ChevronRight, MessageSquare, Reply, Trash2, Calendar, User as UserIcon, Download, TreePine, Code } from 'lucide-react';
 import type { User } from '../App';
 import { parseXsd, type XsdNode } from '../lib/xsd-parser';
+import { exportGroupCommentsToMarkdown, downloadMarkdown } from '../lib/export-comments';
 import SchemaTree from '../components/SchemaTree';
 import SchemaSearch from '../components/SchemaSearch';
 import SchemaBreadcrumb from '../components/SchemaBreadcrumb';
@@ -10,6 +11,7 @@ import CodeViewer from '../components/CodeViewer';
 import ElementDetails from '../components/ElementDetails';
 import CommentList, { type Comment } from '../components/CommentList';
 import CommentForm from '../components/CommentForm';
+import TagEditor from '../components/TagEditor';
 import type { SchemaGroupDetail } from '../types/schemaGroup';
 
 interface SchemaGroupPageProps {
@@ -37,6 +39,26 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
   const handleHighlightChange = useCallback((xpaths: Set<string>) => {
     setHighlightedXpaths(xpaths);
   }, []);
+
+  // Tags aktualisieren
+  const handleUpdateTags = async (newTags: string[]) => {
+    if (!group) return;
+
+    const token = localStorage.getItem('token');
+    const res = await fetch(`/api/schema-groups/${group.id}/tags`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ tags: newTags }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      setGroup(prev => prev ? { ...prev, tags: data.tags } : prev);
+    }
+  };
 
   // Ausgewähltes Schema
   const selectedSchema = useMemo(() => {
@@ -379,9 +401,41 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
                   {new Date(group.createdAt).toLocaleDateString('de-DE')}
                 </span>
               </div>
+              {/* Tags */}
+              <div className="mt-1">
+                <TagEditor
+                  tags={group.tags || []}
+                  onTagsChange={handleUpdateTags}
+                  canEdit={!!user}
+                />
+              </div>
             </div>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            {/* Export Button - exports group comments and current schema comments */}
+            {(group.comments.length > 0 || schemaComments.length > 0) && (
+              <button
+                onClick={() => {
+                  const currentSchemaComments = selectedSchema ? [{
+                    schemaName: selectedSchema.filename,
+                    comments: schemaComments,
+                  }] : [];
+                  const markdown = exportGroupCommentsToMarkdown(
+                    group.name,
+                    group.version,
+                    currentSchemaComments,
+                    group.comments as Comment[]
+                  );
+                  downloadMarkdown(markdown, `${group.name}_v${group.version}_kommentare.md`);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
+                           bg-primary-50 text-primary-600 hover:bg-primary-100 transition-colors"
+                title="Gruppen-Kommentare exportieren"
+              >
+                <FileText size={16} />
+                Export
+              </button>
+            )}
             {selectedSchema && (
               <button
                 onClick={() => {

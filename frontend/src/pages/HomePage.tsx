@@ -4,6 +4,7 @@ import { Upload, FileText, MessageCircle, ChevronRight, FolderOpen, Files, Calen
 import type { User as UserType } from '../App';
 import type { SchemaGroup } from '../types/schemaGroup';
 import SchemaGroupUpload from '../components/SchemaGroupUpload';
+import { TagBadges } from '../components/TagEditor';
 
 interface SchemaVersion {
   id: number;
@@ -250,6 +251,7 @@ export default function HomePage({ user }: HomePageProps) {
                       <div className="flex items-center gap-3 mb-1">
                         <h3 className="font-semibold text-primary-900">{group.name}</h3>
                         <span className="badge-primary">v{group.version}</span>
+                        <TagBadges tags={group.tags} />
                       </div>
                       <div className="flex items-center gap-4 text-sm text-primary-500">
                         <span className="flex items-center gap-1">

@@ -32,6 +32,7 @@ model SchemaGroup {
   name        String
   version     String
   description String?   @db.Text
+  tags        String?   @db.VarChar(500) // Komma-getrennte Tags, z.B. "Draft,In Review"
   uploadedBy  Int?      @map("uploaded_by")
   createdAt   DateTime  @default(now()) @map("created_at")
 
@@ -49,6 +50,7 @@ model Schema {
   name       String    // z.B. "FPD_Schema"
   version    String    // z.B. "1.0"
   content    String    @db.LongText // XSD-Inhalt
+  tags       String?   @db.VarChar(500) // Komma-getrennte Tags, z.B. "Draft,Approved"
   uploadedBy Int?      @map("uploaded_by")
   createdAt  DateTime  @default(now()) @map("created_at")
 

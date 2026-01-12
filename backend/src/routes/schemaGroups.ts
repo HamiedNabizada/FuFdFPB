@@ -154,6 +154,7 @@ router.get('/', async (req: Request, res: Response) => {
         name: g.name,
         version: g.version,
         description: g.description,
+        tags: g.tags ? g.tags.split(',') : [],
         uploadedBy: g.uploader?.name || 'Unbekannt',
         createdAt: g.createdAt,
         commentCount: g._count.comments,
@@ -220,6 +221,7 @@ router.get('/:id', async (req: Request, res: Response) => {
         name: group.name,
         version: group.version,
         description: group.description,
+        tags: group.tags ? group.tags.split(',') : [],
         uploadedBy: group.uploader?.name || 'Unbekannt',
         createdAt: group.createdAt,
         schemas: group.schemas.map(s => ({
@@ -325,6 +327,36 @@ router.delete('/:id', authMiddleware, async (req: Request, res: Response) => {
     res.json({ message: 'Gruppe erfolgreich gelöscht' });
   } catch (error) {
     console.error('Fehler beim Löschen der Schema-Gruppe:', error);
+    res.status(500).json({ error: 'Interner Serverfehler' });
+  }
+});
+
+// PATCH /api/schema-groups/:id/tags - Tags aktualisieren
+router.patch('/:id/tags', authMiddleware, async (req: Request, res: Response) => {
+  const prisma: PrismaClient = (req as any).prisma;
+  const groupId = parseInt(req.params.id);
+  const { tags } = req.body as { tags: string[] };
+
+  try {
+    const group = await prisma.schemaGroup.findUnique({ where: { id: groupId } });
+    if (!group) {
+      return res.status(404).json({ error: 'Gruppe nicht gefunden' });
+    }
+
+    // Tags als komma-getrennter String speichern (max 500 Zeichen)
+    const tagsString = tags?.filter(t => t.trim()).join(',').substring(0, 500) || null;
+
+    const updated = await prisma.schemaGroup.update({
+      where: { id: groupId },
+      data: { tags: tagsString }
+    });
+
+    res.json({
+      message: 'Tags aktualisiert',
+      tags: updated.tags ? updated.tags.split(',') : []
+    });
+  } catch (error) {
+    console.error('Fehler beim Aktualisieren der Tags:', error);
     res.status(500).json({ error: 'Interner Serverfehler' });
   }
 });
