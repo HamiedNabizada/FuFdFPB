@@ -224,12 +224,14 @@ export default function ReviewStats() {
                   <button
                     key={opt.value}
                     onClick={() => handleCategoryFilter(opt.value)}
-                    className={`text-xs px-2.5 py-1 rounded-full transition-colors ${
+                    title={CATEGORIES[opt.value].description}
+                    className={`text-xs px-2.5 py-1 rounded-full transition-colors flex items-center gap-1.5 ${
                       categoryFilter === opt.value
                         ? `${CATEGORIES[opt.value].bgColor} ${CATEGORIES[opt.value].color}`
                         : 'bg-primary-50 text-primary-600 hover:bg-primary-100'
                     }`}
                   >
+                    <span className={`w-2 h-2 rounded-full ${CATEGORIES[opt.value].dotColor}`}></span>
                     {opt.label}
                   </button>
                 ))}
@@ -266,8 +268,12 @@ export default function ReviewStats() {
                               </span>
                             )}
                             {comment.category && CATEGORIES[comment.category] && (
-                              <span className={`text-xs px-1.5 py-0.5 rounded-full ${CATEGORIES[comment.category].bgColor} ${CATEGORIES[comment.category].color}`}>
-                                {CATEGORIES[comment.category].icon} {CATEGORIES[comment.category].label}
+                              <span
+                                title={CATEGORIES[comment.category].description}
+                                className={`text-xs px-1.5 py-0.5 rounded-full flex items-center gap-1 ${CATEGORIES[comment.category].bgColor} ${CATEGORIES[comment.category].color}`}
+                              >
+                                <span className={`w-1.5 h-1.5 rounded-full ${CATEGORIES[comment.category].dotColor}`}></span>
+                                {CATEGORIES[comment.category].label}
                               </span>
                             )}
                           </div>

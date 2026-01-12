@@ -1,39 +1,44 @@
 export type CommentCategory = 'editorial' | 'technical' | 'question' | 'discussion' | 'error';
 
-export const CATEGORIES: Record<CommentCategory, { label: string; icon: string; color: string; bgColor: string }> = {
+export const CATEGORIES: Record<CommentCategory, { label: string; description: string; color: string; bgColor: string; dotColor: string }> = {
   editorial: {
     label: 'Redaktionell',
-    icon: '✏️',
-    color: 'text-gray-700',
-    bgColor: 'bg-gray-100'
+    description: 'Formatierung, Rechtschreibung, Formulierung',
+    color: 'text-slate-700',
+    bgColor: 'bg-slate-100',
+    dotColor: 'bg-slate-500'
   },
   technical: {
     label: 'Technisch',
-    icon: '⚙️',
+    description: 'Strukturelle oder technische Änderungen am Schema',
     color: 'text-blue-700',
-    bgColor: 'bg-blue-100'
+    bgColor: 'bg-blue-100',
+    dotColor: 'bg-blue-500'
   },
   question: {
     label: 'Frage',
-    icon: '❓',
+    description: 'Verständnisfrage oder Klärungsbedarf',
     color: 'text-amber-700',
-    bgColor: 'bg-amber-100'
+    bgColor: 'bg-amber-100',
+    dotColor: 'bg-amber-500'
   },
   discussion: {
     label: 'Diskussion',
-    icon: '💬',
+    description: 'Thema zur Abstimmung im Gremium',
     color: 'text-purple-700',
-    bgColor: 'bg-purple-100'
+    bgColor: 'bg-purple-100',
+    dotColor: 'bg-purple-500'
   },
   error: {
     label: 'Fehler',
-    icon: '🐛',
+    description: 'Bug oder Inkonsistenz im Schema',
     color: 'text-red-700',
-    bgColor: 'bg-red-100'
+    bgColor: 'bg-red-100',
+    dotColor: 'bg-red-500'
   }
 };
 
-export const CATEGORY_OPTIONS = Object.entries(CATEGORIES).map(([value, { label, icon }]) => ({
+export const CATEGORY_OPTIONS = Object.entries(CATEGORIES).map(([value, { label }]) => ({
   value: value as CommentCategory,
-  label: `${icon} ${label}`
+  label
 }));

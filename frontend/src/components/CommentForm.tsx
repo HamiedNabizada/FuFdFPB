@@ -46,12 +46,14 @@ export default function CommentForm({ user, onSubmit, disabled }: CommentFormPro
             type="button"
             onClick={() => setCategory(opt.value)}
             disabled={disabled}
-            className={`text-xs px-2.5 py-1.5 rounded-full transition-colors ${
+            title={CATEGORIES[opt.value].description}
+            className={`text-xs px-2.5 py-1.5 rounded-full transition-colors flex items-center gap-1.5 ${
               category === opt.value
                 ? `${CATEGORIES[opt.value].bgColor} ${CATEGORIES[opt.value].color} ring-2 ring-offset-1 ring-primary-300`
                 : 'bg-primary-50 text-primary-600 hover:bg-primary-100'
             }`}
           >
+            <span className={`w-2 h-2 rounded-full ${CATEGORIES[opt.value].dotColor}`}></span>
             {opt.label}
           </button>
         ))}

@@ -108,8 +108,12 @@ export default function CommentList({
             <div className="flex items-center gap-2">
               <span className="font-medium text-primary-900">{getAuthorName(comment)}</span>
               {comment.category && CATEGORIES[comment.category] && (
-                <span className={`text-xs px-2 py-0.5 rounded-full ${CATEGORIES[comment.category].bgColor} ${CATEGORIES[comment.category].color}`}>
-                  {CATEGORIES[comment.category].icon} {CATEGORIES[comment.category].label}
+                <span
+                  title={CATEGORIES[comment.category].description}
+                  className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1.5 ${CATEGORIES[comment.category].bgColor} ${CATEGORIES[comment.category].color}`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${CATEGORIES[comment.category].dotColor}`}></span>
+                  {CATEGORIES[comment.category].label}
                 </span>
               )}
               <span className="text-xs text-primary-500">{formatDate(comment.createdAt)}</span>
