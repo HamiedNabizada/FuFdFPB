@@ -228,6 +228,31 @@ router.post('/:id/replies', optionalAuthMiddleware, async (req: Request, res: Re
   }
 });
 
+// Globale Kommentar-Statistik (für Homepage)
+router.get('/stats', async (req: Request, res: Response) => {
+  try {
+    const prisma: PrismaClient = (req as any).prisma;
+
+    const [total, open, resolved] = await Promise.all([
+      prisma.comment.count(),
+      prisma.comment.count({ where: { status: 'open' } }),
+      prisma.comment.count({ where: { status: 'resolved' } })
+    ]);
+
+    res.json({
+      stats: {
+        total,
+        open,
+        resolved,
+        progress: total > 0 ? Math.round((resolved / total) * 100) : 0
+      }
+    });
+  } catch (error) {
+    console.error('Get global comment stats error:', error);
+    res.status(500).json({ error: 'Fehler beim Laden der Statistik' });
+  }
+});
+
 // Kommentar-Statistik für ein Schema
 router.get('/schema/:schemaId/stats', async (req: Request, res: Response) => {
   try {

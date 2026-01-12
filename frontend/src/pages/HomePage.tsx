@@ -5,6 +5,7 @@ import type { User as UserType } from '../App';
 import type { SchemaGroup } from '../types/schemaGroup';
 import SchemaGroupUpload from '../components/SchemaGroupUpload';
 import { TagBadges } from '../components/TagEditor';
+import ReviewStats from '../components/ReviewStats';
 
 interface SchemaVersion {
   id: number;
@@ -146,6 +147,9 @@ export default function HomePage({ user }: HomePageProps) {
           </div>
         )}
       </div>
+
+      {/* Review Stats */}
+      <ReviewStats />
 
       {/* Group Upload */}
       {uploadMode === 'group' && (
