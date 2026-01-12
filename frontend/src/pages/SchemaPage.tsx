@@ -318,6 +318,7 @@ export default function SchemaPage({ user }: SchemaPageProps) {
               <div className="flex-1 overflow-y-auto py-2">
                 <SchemaTree
                   node={parsedSchema}
+                  rootNode={parsedSchema}
                   selectedNode={selectedNode}
                   onSelectNode={setSelectedNode}
                   commentCounts={commentCounts}

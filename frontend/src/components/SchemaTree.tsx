@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { ChevronRight, ChevronDown, MessageCircle } from 'lucide-react';
+import { ChevronRight, ChevronDown, MessageCircle, ArrowRight, Link2 } from 'lucide-react';
 import type { XsdNode } from '../lib/xsd-parser';
-import { getNodeTypeColor } from '../lib/xsd-parser';
+import { getNodeTypeColor, findNodeByXpath } from '../lib/xsd-parser';
 
 interface SchemaTreeProps {
   node: XsdNode;
+  rootNode: XsdNode;  // Root für Ref-Auflösung
   selectedNode: XsdNode | null;
   onSelectNode: (node: XsdNode) => void;
   commentCounts: Record<string, number>;
@@ -14,6 +15,7 @@ interface SchemaTreeProps {
 
 export default function SchemaTree({
   node,
+  rootNode,
   selectedNode,
   onSelectNode,
   commentCounts,
@@ -54,6 +56,17 @@ export default function SchemaTree({
     setExpanded(!expanded);
   };
 
+  // Klick auf Ref-Link: Zum Ziel-Element navigieren
+  const handleRefClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (node.refTargetXpath) {
+      const target = findNodeByXpath(rootNode, node.refTargetXpath);
+      if (target) {
+        onSelectNode(target);
+      }
+    }
+  };
+
   return (
     <div className="select-none">
       <div
@@ -91,6 +104,27 @@ export default function SchemaTree({
           {node.name || '(unnamed)'}
         </span>
 
+        {/* Ref-Indikator mit Verbindung zum Ziel */}
+        {node.isRef && (
+          <span className="flex items-center gap-1 ml-1">
+            {node.refTargetXpath ? (
+              <button
+                onClick={handleRefClick}
+                className="flex items-center gap-0.5 text-xs text-accent-600 hover:text-accent-800 hover:bg-accent-50 px-1.5 py-0.5 rounded transition-colors"
+                title={`Gehe zu: ${node.refName}`}
+              >
+                <ArrowRight className="w-3 h-3" />
+                <span className="font-mono">{node.refName?.split(':').pop()}</span>
+              </button>
+            ) : (
+              <span className="flex items-center gap-0.5 text-xs text-primary-400 px-1.5 py-0.5" title="Referenz (Ziel nicht gefunden)">
+                <Link2 className="w-3 h-3" />
+                <span className="font-mono">{node.refName?.split(':').pop()}</span>
+              </span>
+            )}
+          </span>
+        )}
+
         {/* Comment Count Badge */}
         {commentCount > 0 && (
           <span className="flex items-center gap-0.5 ml-auto text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full">
@@ -107,6 +141,7 @@ export default function SchemaTree({
             <SchemaTree
               key={child.id}
               node={child}
+              rootNode={rootNode}
               selectedNode={selectedNode}
               onSelectNode={onSelectNode}
               commentCounts={commentCounts}

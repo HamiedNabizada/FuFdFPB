@@ -9,6 +9,10 @@ export interface XsdNode {
   documentation?: string;
   children: XsdNode[];
   parent?: XsdNode;
+  // Ref-Tracking
+  isRef?: boolean;           // true wenn Element ein ref= Attribut hat
+  refName?: string;          // Name des referenzierten Elements
+  refTargetXpath?: string;   // XPath zum Ziel-Element (nach Auflösung)
 }
 
 const parser = new XMLParser({
@@ -91,6 +95,10 @@ function parseNode(node: any, parentXpath: string, parent?: XsdNode): XsdNode | 
   // Get documentation from children
   const documentation = Array.isArray(nodeContent) ? getDocumentation(nodeContent) : undefined;
 
+  // Prüfen ob es eine Referenz ist
+  const isRef = 'ref' in attributes;
+  const refName = attributes['ref'];
+
   const xsdNode: XsdNode = {
     id: generateId(),
     name: nameAttr || nodeName.replace(/^xs:|^xsd:/, ''),
@@ -100,6 +108,8 @@ function parseNode(node: any, parentXpath: string, parent?: XsdNode): XsdNode | 
     documentation,
     children,
     parent,
+    isRef,
+    refName: isRef ? refName : undefined,
   };
 
   // Parse children
@@ -113,6 +123,54 @@ function parseNode(node: any, parentXpath: string, parent?: XsdNode): XsdNode | 
   }
 
   return xsdNode;
+}
+
+// Index aller benannten Elemente aufbauen
+function buildNameIndex(node: XsdNode, index: Map<string, XsdNode> = new Map()): Map<string, XsdNode> {
+  // Nur Elemente mit name-Attribut (nicht ref) indizieren
+  if (node.attributes['name'] && !node.isRef) {
+    const name = node.attributes['name'];
+    // Schlüssel: typ:name (z.B. "element:PersonName" oder "complexType:AddressType")
+    const key = `${node.type}:${name}`;
+    index.set(key, node);
+    // Auch ohne Typ-Prefix für einfachere Suche
+    if (!index.has(name)) {
+      index.set(name, node);
+    }
+  }
+
+  for (const child of node.children) {
+    buildNameIndex(child, index);
+  }
+
+  return index;
+}
+
+// Refs zu ihren Zielen auflösen
+function resolveRefs(node: XsdNode, nameIndex: Map<string, XsdNode>): void {
+  if (node.isRef && node.refName) {
+    // Namespace-Prefix entfernen falls vorhanden (z.B. "tns:PersonName" -> "PersonName")
+    const refNameClean = node.refName.includes(':')
+      ? node.refName.split(':')[1]
+      : node.refName;
+
+    // Zuerst mit passendem Typ suchen
+    const typeKey = `${node.type}:${refNameClean}`;
+    let target = nameIndex.get(typeKey);
+
+    // Falls nicht gefunden, ohne Typ-Prefix suchen
+    if (!target) {
+      target = nameIndex.get(refNameClean);
+    }
+
+    if (target) {
+      node.refTargetXpath = target.xpath;
+    }
+  }
+
+  for (const child of node.children) {
+    resolveRefs(child, nameIndex);
+  }
 }
 
 export function parseXsd(xsdContent: string): XsdNode | null {
@@ -130,7 +188,15 @@ export function parseXsd(xsdContent: string): XsdNode | null {
     for (const node of parsed) {
       const nodeName = getNodeName(node);
       if (nodeName === 'xs:schema' || nodeName === 'xsd:schema') {
-        return parseNode(node, '', undefined);
+        const root = parseNode(node, '', undefined);
+
+        if (root) {
+          // Index aufbauen und Refs auflösen
+          const nameIndex = buildNameIndex(root);
+          resolveRefs(root, nameIndex);
+        }
+
+        return root;
       }
     }
 
