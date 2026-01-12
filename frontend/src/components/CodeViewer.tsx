@@ -1,5 +1,11 @@
 import { useState, useMemo } from 'react';
 import { Copy, Check } from 'lucide-react';
+import hljs from 'highlight.js/lib/core';
+import xml from 'highlight.js/lib/languages/xml';
+import 'highlight.js/styles/github.css';
+
+// Register XML language (includes XSD support)
+hljs.registerLanguage('xml', xml);
 
 interface CodeViewerProps {
   content: string;
@@ -15,8 +21,12 @@ export default function CodeViewer({ content, filename }: CodeViewerProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Split content into lines for line numbers
-  const lines = useMemo(() => content.split('\n'), [content]);
+  // Highlight code
+  const highlightedLines = useMemo(() => {
+    const result = hljs.highlight(content, { language: 'xml' });
+    // Split into lines while preserving HTML
+    return result.value.split('\n');
+  }, [content]);
 
   return (
     <div className="h-full flex flex-col bg-white rounded-lg border border-primary-200 overflow-hidden">
@@ -47,14 +57,15 @@ export default function CodeViewer({ content, filename }: CodeViewerProps) {
       <div className="flex-1 overflow-auto">
         <table className="w-full text-xs font-mono">
           <tbody>
-            {lines.map((line, index) => (
+            {highlightedLines.map((line, index) => (
               <tr key={index} className="hover:bg-primary-50">
-                <td className="px-3 py-0.5 text-right text-primary-300 select-none border-r border-primary-100 w-12">
+                <td className="px-3 py-0.5 text-right text-primary-300 select-none border-r border-primary-100 w-12 align-top">
                   {index + 1}
                 </td>
-                <td className="px-3 py-0.5 whitespace-pre text-primary-800">
-                  {line || ' '}
-                </td>
+                <td
+                  className="px-3 py-0.5 whitespace-pre text-primary-800"
+                  dangerouslySetInnerHTML={{ __html: line || ' ' }}
+                />
               </tr>
             ))}
           </tbody>

@@ -1,7 +1,13 @@
 import { useState, useMemo } from 'react';
 import { ChevronDown, ChevronRight, Copy, Check } from 'lucide-react';
+import hljs from 'highlight.js/lib/core';
+import xml from 'highlight.js/lib/languages/xml';
+import 'highlight.js/styles/github.css';
 import { getNodeTypeLabel } from '../lib/xsd-parser';
 import type { XsdNode } from '../lib/xsd-parser';
+
+// Register XML language
+hljs.registerLanguage('xml', xml);
 
 interface ElementDetailsProps {
   node: XsdNode;
@@ -147,13 +153,18 @@ export default function ElementDetails({ node, schemaContent }: ElementDetailsPr
             <div className="relative">
               <button
                 onClick={handleCopy}
-                className="absolute top-2 right-2 p-1.5 bg-white/80 hover:bg-white rounded text-primary-500 hover:text-primary-700 transition-colors"
+                className="absolute top-2 right-2 p-1.5 bg-white/80 hover:bg-white rounded text-primary-500 hover:text-primary-700 transition-colors z-10"
                 title="Code kopieren"
               >
                 {copied ? <Check className="w-3.5 h-3.5 text-accent-600" /> : <Copy className="w-3.5 h-3.5" />}
               </button>
               <pre className="text-xs font-mono bg-primary-50 p-3 rounded border border-primary-200 overflow-x-auto max-h-64 overflow-y-auto">
-                {codeSnippet}
+                <code
+                  className="hljs language-xml"
+                  dangerouslySetInnerHTML={{
+                    __html: hljs.highlight(codeSnippet, { language: 'xml' }).value
+                  }}
+                />
               </pre>
             </div>
           )}
