@@ -53,7 +53,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-primary-900">
+    <div className="min-h-screen bg-gray-50">
       <Header user={user} onLogout={handleLogout} />
       <main>
         <Routes>

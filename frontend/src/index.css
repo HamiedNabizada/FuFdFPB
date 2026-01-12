@@ -6,8 +6,7 @@
 
 @layer base {
   body {
-    @apply text-primary-900 antialiased bg-white;
-    @apply dark:bg-primary-900 dark:text-primary-100;
+    @apply text-primary-900 antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
@@ -20,12 +19,10 @@
   /* Professional card style */
   .card {
     @apply bg-white rounded-lg border border-primary-100 shadow-card;
-    @apply dark:bg-primary-800 dark:border-primary-700;
   }
 
   .card-hover {
     @apply card transition-all duration-200 hover:shadow-soft hover:border-primary-200;
-    @apply dark:hover:border-primary-600;
   }
 
   /* Button styles */
@@ -36,7 +33,6 @@
            hover:bg-primary-800
            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
            disabled:opacity-50 disabled:cursor-not-allowed;
-    @apply dark:bg-primary-600 dark:hover:bg-primary-500 dark:focus:ring-offset-primary-900;
   }
 
   .btn-secondary {
@@ -46,8 +42,6 @@
            hover:bg-primary-100 hover:border-primary-300
            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
            disabled:opacity-50 disabled:cursor-not-allowed;
-    @apply dark:bg-primary-700 dark:text-primary-200 dark:border-primary-600
-           dark:hover:bg-primary-600 dark:focus:ring-offset-primary-900;
   }
 
   .btn-ghost {
@@ -55,7 +49,6 @@
            text-primary-600 font-medium rounded-md
            transition-colors duration-200
            hover:bg-primary-50 hover:text-primary-800;
-    @apply dark:text-primary-300 dark:hover:bg-primary-700 dark:hover:text-primary-100;
   }
 
   /* Badge styles */
@@ -65,17 +58,14 @@
 
   .badge-primary {
     @apply badge bg-primary-100 text-primary-700;
-    @apply dark:bg-primary-700 dark:text-primary-200;
   }
 
   .badge-accent {
     @apply badge bg-accent-100 text-accent-700;
-    @apply dark:bg-accent-800 dark:text-accent-200;
   }
 
   .badge-neutral {
     @apply badge bg-gray-100 text-gray-600;
-    @apply dark:bg-gray-700 dark:text-gray-300;
   }
 
   /* Input styles */
@@ -85,8 +75,6 @@
            text-primary-900 placeholder-primary-400
            transition-colors duration-200
            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
-    @apply dark:bg-primary-800 dark:border-primary-600 dark:text-primary-100
-           dark:placeholder-primary-500 dark:focus:border-primary-400;
   }
 
   .input-sm {
@@ -113,22 +101,8 @@
   background: #9fb3c8;
 }
 
-/* Dark mode scrollbar */
-.dark ::-webkit-scrollbar-thumb {
-  background: #486581;
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #627d98;
-}
-
 /* Selection color */
 ::selection {
   background-color: #d9e2ec;
   color: #102a43;
-}
-
-.dark ::selection {
-  background-color: #334e68;
-  color: #f0f4f8;
 }
