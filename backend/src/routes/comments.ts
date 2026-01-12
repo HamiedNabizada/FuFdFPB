@@ -228,6 +228,35 @@ router.post('/:id/replies', optionalAuthMiddleware, async (req: Request, res: Re
   }
 });
 
+// Kommentare nach Status abrufen (für Homepage)
+router.get('/by-status/:status', async (req: Request, res: Response) => {
+  try {
+    const prisma: PrismaClient = (req as any).prisma;
+    const { status } = req.params;
+
+    if (!['open', 'resolved'].includes(status)) {
+      return res.status(400).json({ error: 'Status muss "open" oder "resolved" sein' });
+    }
+
+    const comments = await prisma.comment.findMany({
+      where: { status: status as 'open' | 'resolved' },
+      include: {
+        author: { select: { name: true } },
+        schema: { select: { id: true, name: true, version: true, groupId: true } },
+        group: { select: { id: true, name: true, version: true } },
+        replies: { select: { id: true } }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50 // Limit für Performance
+    });
+
+    res.json({ comments });
+  } catch (error) {
+    console.error('Get comments by status error:', error);
+    res.status(500).json({ error: 'Fehler beim Laden der Kommentare' });
+  }
+});
+
 // Globale Kommentar-Statistik (für Homepage)
 router.get('/stats', async (req: Request, res: Response) => {
   try {
