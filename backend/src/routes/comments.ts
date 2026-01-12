@@ -253,7 +253,15 @@ router.get('/by-status/:status', async (req: Request, res: Response) => {
 
     const comments = await prisma.comment.findMany({
       where: whereClause,
-      include: {
+      select: {
+        id: true,
+        commentText: true,
+        xpath: true,
+        elementName: true,
+        status: true,
+        category: true,
+        createdAt: true,
+        authorName: true,
         author: { select: { name: true } },
         schema: { select: { id: true, name: true, version: true, groupId: true } },
         group: { select: { id: true, name: true, version: true } },

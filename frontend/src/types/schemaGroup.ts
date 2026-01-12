@@ -44,6 +44,7 @@ export interface GroupComment {
   commentText: string;
   authorName: string;
   status: 'open' | 'resolved';
+  category?: 'editorial' | 'technical' | 'question' | 'discussion' | 'error';
   createdAt: string;
   replies: GroupReply[];
 }

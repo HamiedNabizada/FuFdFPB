@@ -251,6 +251,7 @@ router.get('/:id', async (req: Request, res: Response) => {
           commentText: c.commentText,
           authorName: c.author?.name || c.authorName || 'Anonym',
           status: c.status,
+          category: c.category,
           createdAt: c.createdAt,
           replies: c.replies.map(r => ({
             id: r.id,
@@ -272,7 +273,7 @@ router.post('/:id/comments', optionalAuthMiddleware, async (req: Request, res: R
   const prisma: PrismaClient = (req as any).prisma;
   const groupId = parseInt(req.params.id);
   const userId = (req as any).userId;
-  const { commentText, authorName } = req.body;
+  const { commentText, authorName, category } = req.body;
 
   try {
     if (!commentText) {
@@ -284,10 +285,15 @@ router.post('/:id/comments', optionalAuthMiddleware, async (req: Request, res: R
       return res.status(404).json({ error: 'Gruppe nicht gefunden' });
     }
 
+    // Kategorie validieren
+    const validCategories = ['editorial', 'technical', 'question', 'discussion', 'error'];
+    const commentCategory = validCategories.includes(category) ? category : 'technical';
+
     const comment = await prisma.comment.create({
       data: {
         groupId,
         commentText,
+        category: commentCategory,
         authorId: userId || null,
         authorName: userId ? null : (authorName || 'Anonym')
       },
@@ -302,6 +308,7 @@ router.post('/:id/comments', optionalAuthMiddleware, async (req: Request, res: R
         commentText: comment.commentText,
         authorName: comment.author?.name || comment.authorName || 'Anonym',
         status: comment.status,
+        category: comment.category,
         createdAt: comment.createdAt
       }
     });

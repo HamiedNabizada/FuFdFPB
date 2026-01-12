@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, FileText, FolderOpen, Filter, ChevronRight, MessageSquare, Reply, Trash2, Calendar, User as UserIcon, Download, TreePine, Code, Network } from 'lucide-react';
+import { ArrowLeft, FileText, FolderOpen, Filter, ChevronRight, MessageSquare, Reply, Trash2, Calendar, User as UserIcon, Download, TreePine, Code, Network, Check } from 'lucide-react';
 import type { User } from '../App';
 import { parseXsd, findNodeByXpath, type XsdNode } from '../lib/xsd-parser';
 import { exportGroupCommentsToMarkdown, downloadMarkdown } from '../lib/export-comments';
@@ -12,6 +12,7 @@ import ElementDetails from '../components/ElementDetails';
 import CommentList, { type Comment } from '../components/CommentList';
 import CommentForm from '../components/CommentForm';
 import TagEditor from '../components/TagEditor';
+import { CATEGORIES, type CommentCategory } from '../lib/categories';
 import DependencyGraph from '../components/DependencyGraph';
 import type { SchemaGroupDetail } from '../types/schemaGroup';
 
@@ -683,12 +684,35 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
                     <p className="text-primary-400 text-sm py-4 text-center">Noch keine Kommentare vorhanden.</p>
                   ) : (
                     group.comments.map((comment) => (
-                      <div key={comment.id} className="border border-primary-100 rounded-lg p-4 bg-primary-50/50">
+                      <div key={comment.id} className={`border rounded-lg p-4 ${
+                        comment.status === 'resolved'
+                          ? 'bg-accent-50 border-accent-200'
+                          : 'border-primary-100 bg-primary-50/50'
+                      }`}>
                         <div className="flex items-start justify-between mb-2">
-                          <span className="font-medium text-sm text-primary-900">{comment.authorName}</span>
-                          <span className="text-xs text-primary-400">
-                            {new Date(comment.createdAt).toLocaleString('de-DE')}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm text-primary-900">{comment.authorName}</span>
+                            {comment.category && CATEGORIES[comment.category as CommentCategory] && (
+                              <span
+                                title={CATEGORIES[comment.category as CommentCategory].description}
+                                className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1.5 ${CATEGORIES[comment.category as CommentCategory].bgColor} ${CATEGORIES[comment.category as CommentCategory].color}`}
+                              >
+                                <span className={`w-2 h-2 rounded-full ${CATEGORIES[comment.category as CommentCategory].dotColor}`}></span>
+                                {CATEGORIES[comment.category as CommentCategory].label}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {comment.status === 'resolved' && (
+                              <span className="text-xs bg-accent-100 text-accent-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <Check className="w-3 h-3" />
+                                Erledigt
+                              </span>
+                            )}
+                            <span className="text-xs text-primary-400">
+                              {new Date(comment.createdAt).toLocaleString('de-DE')}
+                            </span>
+                          </div>
                         </div>
                         <p className="text-sm text-primary-700 mb-3">{comment.commentText}</p>
 
