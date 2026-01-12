@@ -37,3 +37,6 @@ backend/prisma/migrations/
 
 # Local config
 .claude/
+
+# Claude Code temp files
+tmpclaude-*
