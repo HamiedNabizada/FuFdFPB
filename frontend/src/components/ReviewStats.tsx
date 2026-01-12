@@ -74,10 +74,13 @@ export default function ReviewStats() {
   };
 
   const getCommentLink = (comment: CommentItem) => {
+    const xpathParam = comment.xpath ? `?xpath=${encodeURIComponent(comment.xpath)}` : '';
+    const schemaParam = comment.schema?.id ? `&schemaId=${comment.schema.id}` : '';
+
     if (comment.schema?.groupId) {
-      return `/group/${comment.schema.groupId}`;
+      return `/group/${comment.schema.groupId}${xpathParam}${schemaParam}`;
     } else if (comment.schema) {
-      return `/schema/${comment.schema.id}`;
+      return `/schema/${comment.schema.id}${xpathParam}`;
     } else if (comment.group) {
       return `/group/${comment.group.id}`;
     }

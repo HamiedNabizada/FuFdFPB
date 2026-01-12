@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, FileCode, Filter, Download, TreePine, Code, FileText } from 'lucide-react';
 import type { User } from '../App';
-import { parseXsd, type XsdNode } from '../lib/xsd-parser';
+import { parseXsd, findNodeByXpath, type XsdNode } from '../lib/xsd-parser';
 import { exportCommentsToMarkdown, downloadMarkdown } from '../lib/export-comments';
 import SchemaTree from '../components/SchemaTree';
 import SchemaSearch from '../components/SchemaSearch';
@@ -29,6 +29,7 @@ type FilterStatus = 'all' | 'open' | 'resolved';
 
 export default function SchemaPage({ user }: SchemaPageProps) {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const [schema, setSchema] = useState<SchemaData | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,6 +77,17 @@ export default function SchemaPage({ user }: SchemaPageProps) {
   useEffect(() => {
     fetchSchema();
   }, [id]);
+
+  // URL-Parameter verarbeiten (xpath) - für direkte Kommentar-Links
+  useEffect(() => {
+    const xpathParam = searchParams.get('xpath');
+    if (xpathParam && parsedSchema) {
+      const node = findNodeByXpath(parsedSchema, xpathParam);
+      if (node) {
+        setSelectedNode(node);
+      }
+    }
+  }, [searchParams, parsedSchema]);
 
   const fetchSchema = async () => {
     try {

@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, FileText, FolderOpen, Filter, ChevronRight, MessageSquare, Reply, Trash2, Calendar, User as UserIcon, Download, TreePine, Code, Network } from 'lucide-react';
 import type { User } from '../App';
-import { parseXsd, type XsdNode } from '../lib/xsd-parser';
+import { parseXsd, findNodeByXpath, type XsdNode } from '../lib/xsd-parser';
 import { exportGroupCommentsToMarkdown, downloadMarkdown } from '../lib/export-comments';
 import SchemaTree from '../components/SchemaTree';
 import SchemaSearch from '../components/SchemaSearch';
@@ -23,6 +23,7 @@ type FilterStatus = 'all' | 'open' | 'resolved';
 
 export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
   const { groupId, schemaId } = useParams<{ groupId: string; schemaId?: string }>();
+  const [searchParams] = useSearchParams();
   const [group, setGroup] = useState<SchemaGroupDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -123,6 +124,29 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
       setSchemaComments([]);
     }
   }, [selectedSchemaId]);
+
+  // URL-Parameter verarbeiten (schemaId) - für direkte Kommentar-Links
+  useEffect(() => {
+    const schemaIdParam = searchParams.get('schemaId');
+
+    if (schemaIdParam && group) {
+      const targetSchemaId = parseInt(schemaIdParam);
+      if (targetSchemaId !== selectedSchemaId) {
+        setSelectedSchemaId(targetSchemaId);
+      }
+    }
+  }, [searchParams, group]);
+
+  // Nach dem Parsen des Schemas: Node per xpath auswählen
+  useEffect(() => {
+    const xpathParam = searchParams.get('xpath');
+    if (xpathParam && parsedSchema) {
+      const node = findNodeByXpath(parsedSchema, xpathParam);
+      if (node) {
+        setSelectedNode(node);
+      }
+    }
+  }, [searchParams, parsedSchema]);
 
   const fetchSchemaComments = async (schemaId: number) => {
     console.log('[DEBUG] Fetching comments for schemaId:', schemaId);
