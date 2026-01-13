@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useParams } from 'react-router-dom';
 import { MessageCircle, Check, Reply, Trash2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -6,6 +6,51 @@ import type { User } from '../App';
 import { CATEGORIES, type CommentCategory } from '../lib/categories';
 import { convertReferencesToMarkdown } from '../lib/references';
 import { formatId } from '../lib/id-utils';
+
+// Cache for resolved user names (shared across all instances)
+const userNameCache = new Map<string, string>();
+
+// Resolve user name from API
+async function resolveUserName(userId: string): Promise<string | null> {
+  if (userNameCache.has(userId)) {
+    return userNameCache.get(userId) || null;
+  }
+  try {
+    const res = await fetch(`/api/resolve/U-${userId}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.name) {
+        userNameCache.set(userId, data.name);
+        return data.name;
+      }
+    }
+  } catch (err) {
+    console.error('Failed to resolve user:', err);
+  }
+  return null;
+}
+
+// Separate component for user mention badge to avoid hooks-in-render issues
+const UserMentionBadge = memo(function UserMentionBadge({ userId, fallback }: { userId: string; fallback: string }) {
+  const [userName, setUserName] = useState<string | null>(() => userNameCache.get(userId) || null);
+
+  useEffect(() => {
+    if (!userName) {
+      resolveUserName(userId).then((name) => {
+        if (name) setUserName(name);
+      });
+    }
+  }, [userId, userName]);
+
+  return (
+    <span
+      className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium text-xs"
+      title={fallback}
+    >
+      @{userName || fallback.replace('@', '')}
+    </span>
+  );
+});
 
 export interface CommentReply {
   id: number;
@@ -89,29 +134,6 @@ export default function CommentList({
   // Check if this is a user reference
   const isUserReference = (href: string) => href?.startsWith('#user-');
 
-  // Cache for resolved user names
-  const userNameCache = useRef<Map<string, string>>(new Map());
-
-  // Resolve user name from API
-  const resolveUserName = async (userId: string): Promise<string | null> => {
-    if (userNameCache.current.has(userId)) {
-      return userNameCache.current.get(userId) || null;
-    }
-    try {
-      const res = await fetch(`/api/resolve/U-${userId}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.name) {
-          userNameCache.current.set(userId, data.name);
-          return data.name;
-        }
-      }
-    } catch (err) {
-      console.error('Failed to resolve user:', err);
-    }
-    return null;
-  };
-
   // Markdown component styling
   const markdownComponents = {
     p: ({ children }: { children?: React.ReactNode }) => <p className="mb-2 last:mb-0">{children}</p>,
@@ -128,30 +150,8 @@ export default function CommentList({
       if (href && isUserReference(href)) {
         const childText = String(children || '');
         const userMatch = childText.match(/@U-([a-z0-9]+)/i);
-
-        // UserMentionBadge component to handle async name resolution
-        const UserMentionBadge = () => {
-          const [userName, setUserName] = useState<string | null>(null);
-
-          useEffect(() => {
-            if (userMatch) {
-              resolveUserName(userMatch[1]).then(setUserName);
-            }
-          }, []);
-
-          return (
-            <span
-              className="inline-flex items-center px-1.5 py-0.5 rounded
-                         bg-blue-100 text-blue-700
-                         font-medium text-xs"
-              title={childText}
-            >
-              @{userName || childText.replace('@', '')}
-            </span>
-          );
-        };
-
-        return <UserMentionBadge />;
+        const userId = userMatch ? userMatch[1] : '';
+        return <UserMentionBadge userId={userId} fallback={childText} />;
       }
 
       if (href && isReferenceLink(href)) {
