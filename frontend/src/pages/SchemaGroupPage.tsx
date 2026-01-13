@@ -38,7 +38,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
   const [groupReplyText, setGroupReplyText] = useState('');
   const [highlightedXpaths, setHighlightedXpaths] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'tree' | 'code'>('tree');
-  const [showGraph, setShowGraph] = useState(true);
+  const [showGraph, setShowGraph] = useState(false);
 
   const handleHighlightChange = useCallback((xpaths: Set<string>) => {
     setHighlightedXpaths(xpaths);
