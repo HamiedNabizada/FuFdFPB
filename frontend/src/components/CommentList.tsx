@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { MessageCircle, Check, Reply, Trash2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { User } from '../App';
 import { CATEGORIES, type CommentCategory } from '../lib/categories';
+import { convertReferencesToMarkdown } from '../lib/references';
 
 export interface CommentReply {
   id: number;
@@ -40,6 +42,9 @@ export default function CommentList({
   onReply,
   onDelete,
 }: CommentListProps) {
+  const { groupId } = useParams<{ groupId?: string }>();
+  const currentGroupId = groupId ? parseInt(groupId, 10) : undefined;
+
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');
   const [replyAuthor, setReplyAuthor] = useState('');
@@ -77,6 +82,9 @@ export default function CommentList({
     );
   }
 
+  // Check if a link is a reference link (internal)
+  const isReferenceLink = (href: string) => href?.startsWith('/') || href?.startsWith('#');
+
   // Markdown component styling
   const markdownComponents = {
     p: ({ children }: { children?: React.ReactNode }) => <p className="mb-2 last:mb-0">{children}</p>,
@@ -88,9 +96,26 @@ export default function CommentList({
     ),
     ul: ({ children }: { children?: React.ReactNode }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
     ol: ({ children }: { children?: React.ReactNode }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
-    a: ({ href, children }: { href?: string; children?: React.ReactNode }) => (
-      <a href={href} className="text-primary-600 hover:underline" target="_blank" rel="noopener noreferrer">{children}</a>
-    ),
+    a: ({ href, children }: { href?: string; children?: React.ReactNode }) => {
+      if (href && isReferenceLink(href)) {
+        // Reference link - use React Router Link with special styling
+        return (
+          <Link
+            to={href}
+            className="inline-flex items-center px-1 py-0.5 rounded
+                       bg-primary-100 text-primary-700 hover:bg-primary-200
+                       font-mono text-xs transition-colors no-underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {children}
+          </Link>
+        );
+      }
+      // External link
+      return (
+        <a href={href} className="text-primary-600 hover:underline" target="_blank" rel="noopener noreferrer">{children}</a>
+      );
+    },
     strong: ({ children }: { children?: React.ReactNode }) => <strong className="font-semibold">{children}</strong>,
   };
 
@@ -106,6 +131,7 @@ export default function CommentList({
           {/* Comment Header */}
           <div className="flex items-start justify-between mb-2">
             <div className="flex items-center gap-2">
+              <span className="text-xs text-primary-400 font-mono">C-{comment.id}</span>
               <span className="font-medium text-primary-900">{getAuthorName(comment)}</span>
               {comment.category && CATEGORIES[comment.category] && (
                 <span
@@ -128,7 +154,9 @@ export default function CommentList({
 
           {/* Comment Text */}
           <div className="text-primary-700 text-sm mb-3 prose prose-sm max-w-none">
-            <ReactMarkdown components={markdownComponents}>{comment.commentText}</ReactMarkdown>
+            <ReactMarkdown components={markdownComponents}>
+              {convertReferencesToMarkdown(comment.commentText, currentGroupId)}
+            </ReactMarkdown>
           </div>
 
           {/* Replies */}
@@ -137,11 +165,14 @@ export default function CommentList({
               {comment.replies.map((reply) => (
                 <div key={reply.id}>
                   <div className="text-xs text-primary-500 mb-1">
+                    <span className="text-primary-400 font-mono mr-1">R-{reply.id}</span>
                     <span className="font-medium text-primary-700">{getAuthorName(reply)}</span>
                     <span className="ml-2">{formatDate(reply.createdAt)}</span>
                   </div>
                   <div className="text-sm text-primary-600 prose prose-sm max-w-none">
-                    <ReactMarkdown components={markdownComponents}>{reply.replyText}</ReactMarkdown>
+                    <ReactMarkdown components={markdownComponents}>
+                      {convertReferencesToMarkdown(reply.replyText, currentGroupId)}
+                    </ReactMarkdown>
                   </div>
                 </div>
               ))}

@@ -417,6 +417,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
             </div>
             <div>
               <div className="flex items-center gap-2">
+                <span className="text-xs text-primary-400 font-mono">G-{group.id}</span>
                 <h1 className="font-semibold text-primary-900">{group.name}</h1>
                 <span className="badge-primary">v{group.version}</span>
               </div>
@@ -550,6 +551,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
                   }`}
                 >
                   <FileText size={16} className={selectedSchemaId === schema.id ? 'text-primary-600' : 'text-primary-300'} />
+                  <span className="text-xs text-primary-400 font-mono">S-{schema.id}</span>
                   <span className={`flex-1 truncate ${selectedSchemaId === schema.id ? 'text-primary-900 font-medium' : 'text-primary-700'}`}>
                     {schema.filename}
                   </span>

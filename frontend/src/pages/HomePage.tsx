@@ -11,31 +11,21 @@ import CommentSearch from '../components/CommentSearch';
 import MyComments from '../components/MyComments';
 import CollapsibleSection from '../components/CollapsibleSection';
 
-interface SchemaVersion {
-  id: number;
-  version: string;
-  commentCount: number;
-  uploadedBy: string;
-  createdAt: string;
-}
-
 interface HomePageProps {
   user: UserType | null;
 }
 
 type UploadMode = 'none' | 'single' | 'group';
 
-const INITIAL_SHOW_COUNT = 3;
+const INITIAL_SHOW_COUNT = 5;
 
 export default function HomePage({ user }: HomePageProps) {
-  const [schemas, setSchemas] = useState<Record<string, SchemaVersion[]>>({});
   const [groups, setGroups] = useState<SchemaGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadForm, setUploadForm] = useState({ name: '', version: '', content: '' });
   const [uploadMode, setUploadMode] = useState<UploadMode>('none');
   const [showAllGroups, setShowAllGroups] = useState(false);
-  const [showAllSchemas, setShowAllSchemas] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -43,16 +33,9 @@ export default function HomePage({ user }: HomePageProps) {
 
   const fetchData = async () => {
     try {
-      const [schemasRes, groupsRes] = await Promise.all([
-        fetch('/api/schemas'),
-        fetch('/api/schema-groups')
-      ]);
-
-      const schemasData = await schemasRes.json();
-      const groupsData = await groupsRes.json();
-
-      setSchemas(schemasData.schemas || {});
-      setGroups(groupsData.groups || []);
+      const res = await fetch('/api/schema-groups');
+      const data = await res.json();
+      setGroups(data.groups || []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -114,14 +97,9 @@ export default function HomePage({ user }: HomePageProps) {
     fetchData();
   };
 
-  const standaloneSchemas = Object.entries(schemas);
-
   // Pagination logic
   const displayedGroups = showAllGroups ? groups : groups.slice(0, INITIAL_SHOW_COUNT);
   const hasMoreGroups = groups.length > INITIAL_SHOW_COUNT;
-
-  const displayedSchemas = showAllSchemas ? standaloneSchemas : standaloneSchemas.slice(0, INITIAL_SHOW_COUNT);
-  const hasMoreSchemas = standaloneSchemas.length > INITIAL_SHOW_COUNT;
 
   if (loading) {
     return (
@@ -289,15 +267,26 @@ export default function HomePage({ user }: HomePageProps) {
         </form>
       )}
 
-      {/* Schema Groups */}
-      {groups.length > 0 && (
-        <section className="mb-10">
-          <div className="flex items-center gap-2 mb-4">
-            <FolderOpen className="w-5 h-5 text-primary-600" />
-            <h2 className="text-lg font-semibold text-primary-900">Schema-Gruppen</h2>
-            <span className="badge-neutral">{groups.length}</span>
-          </div>
+      {/* Schemas */}
+      <section>
+        <div className="flex items-center gap-2 mb-4">
+          <FolderOpen className="w-5 h-5 text-primary-600" />
+          <h2 className="text-lg font-semibold text-primary-900">Schemas</h2>
+          <span className="badge-neutral">{groups.length}</span>
+        </div>
 
+        {groups.length === 0 ? (
+          <div className="card p-12 text-center">
+            <FolderOpen className="w-12 h-12 mx-auto mb-4 text-primary-200" />
+            <h3 className="text-lg font-medium text-primary-900 mb-2">Keine Schemas vorhanden</h3>
+            <p className="text-primary-500">
+              {user
+                ? 'Laden Sie ein Schema hoch, um mit der Diskussion zu beginnen.'
+                : 'Melden Sie sich an, um Schemas hochzuladen.'}
+            </p>
+          </div>
+        ) : (
+          <>
           <div className="space-y-3">
             {displayedGroups.map((group) => (
               <Link
@@ -309,6 +298,7 @@ export default function HomePage({ user }: HomePageProps) {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-1">
+                        <span className="text-xs text-primary-400 font-mono">G-{group.id}</span>
                         <h3 className="font-semibold text-primary-900">{group.name}</h3>
                         <span className="badge-primary">v{group.version}</span>
                         <TagBadges tags={group.tags} />
@@ -354,7 +344,7 @@ export default function HomePage({ user }: HomePageProps) {
                             : 'bg-gray-50 text-gray-600'
                         }`}
                       >
-                        {schema.filename}
+                        <span className="opacity-60">S-{schema.id}</span> {schema.filename}
                       </span>
                     ))}
                   </div>
@@ -379,88 +369,7 @@ export default function HomePage({ user }: HomePageProps) {
               )}
             </button>
           )}
-        </section>
-      )}
-
-      {/* Individual Schemas */}
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <FileText className="w-5 h-5 text-primary-600" />
-          <h2 className="text-lg font-semibold text-primary-900">Einzelne Schemas</h2>
-          <span className="badge-neutral">{standaloneSchemas.length}</span>
-        </div>
-
-        {standaloneSchemas.length === 0 ? (
-          <div className="card p-12 text-center">
-            <FileText className="w-12 h-12 mx-auto mb-4 text-primary-200" />
-            <h3 className="text-lg font-medium text-primary-900 mb-2">Keine Schemas vorhanden</h3>
-            <p className="text-primary-500">
-              {user
-                ? 'Laden Sie ein Schema hoch, um mit der Diskussion zu beginnen.'
-                : 'Melden Sie sich an, um Schemas hochzuladen.'}
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="space-y-3">
-              {displayedSchemas.map(([name, versions]) => (
-                <div key={name} className="card overflow-hidden">
-                  <div className="px-4 py-3 bg-primary-50 border-b border-primary-100">
-                    <h3 className="font-semibold text-primary-900 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-primary-600" />
-                      {name}
-                    </h3>
-                  </div>
-                  <div className="divide-y divide-primary-50">
-                    {versions.map((version) => (
-                      <Link
-                        key={version.id}
-                        to={`/schema/${version.id}`}
-                        className="flex items-center justify-between px-4 py-3 hover:bg-primary-50 transition-colors"
-                      >
-                        <div className="flex items-center gap-4">
-                          <span className="badge-primary">v{version.version}</span>
-                          <span className="text-sm text-primary-500 flex items-center gap-1">
-                            <User className="w-3.5 h-3.5" />
-                            {version.uploadedBy}
-                          </span>
-                          <span className="text-sm text-primary-400">
-                            {new Date(version.createdAt).toLocaleDateString('de-DE')}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {version.commentCount > 0 && (
-                            <span className="flex items-center gap-1.5 text-sm text-primary-500">
-                              <MessageCircle className="w-4 h-4" />
-                              {version.commentCount}
-                            </span>
-                          )}
-                          <ChevronRight className="w-5 h-5 text-primary-300" />
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Show more button */}
-            {hasMoreSchemas && (
-              <button
-                onClick={() => setShowAllSchemas(!showAllSchemas)}
-                className="mt-3 w-full py-2 text-sm text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded-lg transition-colors flex items-center justify-center gap-1"
-              >
-                {showAllSchemas ? (
-                  <>Weniger anzeigen</>
-                ) : (
-                  <>
-                    <ChevronDown className="w-4 h-4" />
-                    {standaloneSchemas.length - INITIAL_SHOW_COUNT} weitere anzeigen
-                  </>
-                )}
-              </button>
-            )}
-          </>
+        </>
         )}
       </section>
     </div>
