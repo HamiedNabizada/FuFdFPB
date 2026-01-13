@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, FileText, FolderOpen, Filter, ChevronRight, MessageSquare, Reply, Trash2, Calendar, User as UserIcon, Download, TreePine, Code, Network, Check } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import type { User } from '../App';
 import { parseXsd, findNodeByXpath, type XsdNode } from '../lib/xsd-parser';
 import { exportGroupCommentsToMarkdown, downloadMarkdown } from '../lib/export-comments';
+import { convertReferencesToMarkdown } from '../lib/references';
 import SchemaTree from '../components/SchemaTree';
 import SchemaSearch from '../components/SchemaSearch';
 import SchemaBreadcrumb from '../components/SchemaBreadcrumb';
@@ -39,6 +41,55 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
   const [highlightedXpaths, setHighlightedXpaths] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'tree' | 'code'>('tree');
   const [showGraph, setShowGraph] = useState(false);
+
+  // Helper: Check if link is internal reference
+  const isReferenceLink = (href: string) => href?.startsWith('/') || href?.startsWith('#');
+
+  // Reference click handler - resolves via API
+  const handleReferenceClick = async (e: React.MouseEvent, href: string, childText: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const refMatch = childText.match(/@?([GSCR]-\d+)/i);
+    if (refMatch) {
+      try {
+        const res = await fetch(`/api/resolve/${refMatch[1]}`);
+        if (res.ok) {
+          const data = await res.json();
+          window.location.href = data.url;
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to resolve reference:', err);
+      }
+    }
+    window.location.href = href;
+  };
+
+  // Markdown components for group comments
+  const markdownComponents = {
+    p: ({ children }: { children?: React.ReactNode }) => <p className="mb-2 last:mb-0">{children}</p>,
+    a: ({ href, children }: { href?: string; children?: React.ReactNode }) => {
+      if (href && isReferenceLink(href)) {
+        return (
+          <a
+            href={href}
+            onClick={(e) => handleReferenceClick(e, href, String(children || ''))}
+            className="inline-flex items-center px-1 py-0.5 rounded
+                       bg-primary-100 text-primary-700 hover:bg-primary-200
+                       font-mono text-xs transition-colors cursor-pointer no-underline"
+          >
+            {children}
+          </a>
+        );
+      }
+      return <a href={href} className="text-primary-600 hover:underline" target="_blank" rel="noopener noreferrer">{children}</a>;
+    },
+    strong: ({ children }: { children?: React.ReactNode }) => <strong className="font-semibold">{children}</strong>,
+    code: ({ children }: { children?: React.ReactNode }) => (
+      <code className="bg-primary-100 text-primary-800 px-1.5 py-0.5 rounded text-xs font-mono">{children}</code>
+    ),
+  };
 
   const handleHighlightChange = useCallback((xpaths: Set<string>) => {
     setHighlightedXpaths(xpaths);
@@ -686,13 +737,14 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
                     <p className="text-primary-400 text-sm py-4 text-center">Noch keine Kommentare vorhanden.</p>
                   ) : (
                     group.comments.map((comment) => (
-                      <div key={comment.id} className={`border rounded-lg p-4 ${
+                      <div key={comment.id} id={`comment-${comment.id}`} className={`border rounded-lg p-4 ${
                         comment.status === 'resolved'
                           ? 'bg-accent-50 border-accent-200'
                           : 'border-primary-100 bg-primary-50/50'
                       }`}>
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
+                            <span className="text-xs text-primary-400 font-mono">C-{comment.id}</span>
                             <span className="font-medium text-sm text-primary-900">{comment.authorName}</span>
                             {comment.category && CATEGORIES[comment.category as CommentCategory] && (
                               <span
@@ -716,7 +768,11 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
                             </span>
                           </div>
                         </div>
-                        <p className="text-sm text-primary-700 mb-3">{comment.commentText}</p>
+                        <div className="text-sm text-primary-700 mb-3 prose prose-sm max-w-none">
+                          <ReactMarkdown components={markdownComponents}>
+                            {convertReferencesToMarkdown(comment.commentText, group.id)}
+                          </ReactMarkdown>
+                        </div>
 
                         {/* Action Buttons */}
                         <div className="flex items-center gap-3 text-xs">
@@ -775,13 +831,18 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
                         {comment.replies.length > 0 && (
                           <div className="mt-3 pl-3 border-l-2 border-primary-200 space-y-2">
                             {comment.replies.map((reply) => (
-                              <div key={reply.id} className="text-sm">
+                              <div key={reply.id} id={`reply-${reply.id}`} className="text-sm">
+                                <span className="text-xs text-primary-400 font-mono mr-1">R-{reply.id}</span>
                                 <span className="font-medium text-primary-800">{reply.authorName}</span>
                                 <span className="text-primary-300 mx-1">·</span>
                                 <span className="text-xs text-primary-400">
                                   {new Date(reply.createdAt).toLocaleString('de-DE')}
                                 </span>
-                                <p className="text-primary-600 mt-1">{reply.replyText}</p>
+                                <div className="text-primary-600 mt-1 prose prose-sm max-w-none">
+                                  <ReactMarkdown components={markdownComponents}>
+                                    {convertReferencesToMarkdown(reply.replyText, group.id)}
+                                  </ReactMarkdown>
+                                </div>
                               </div>
                             ))}
                           </div>
