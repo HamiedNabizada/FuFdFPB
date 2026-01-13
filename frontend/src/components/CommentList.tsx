@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { MessageCircle, Check, Reply, Trash2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { User } from '../App';
@@ -44,7 +44,6 @@ export default function CommentList({
 }: CommentListProps) {
   const { groupId } = useParams<{ groupId?: string }>();
   const currentGroupId = groupId ? parseInt(groupId, 10) : undefined;
-  const navigate = useNavigate();
 
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');
@@ -99,21 +98,22 @@ export default function CommentList({
     ol: ({ children }: { children?: React.ReactNode }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
     a: ({ href, children }: { href?: string; children?: React.ReactNode }) => {
       if (href && isReferenceLink(href)) {
-        // Reference link - use navigate for proper SPA navigation
+        // Reference link - use window.location for guaranteed navigation
         return (
-          <button
-            type="button"
+          <a
+            href={href}
             onClick={(e) => {
-              e.stopPropagation();
               e.preventDefault();
-              navigate(href);
+              e.stopPropagation();
+              console.log('Reference clicked:', href);
+              window.location.href = href;
             }}
             className="inline-flex items-center px-1 py-0.5 rounded
                        bg-primary-100 text-primary-700 hover:bg-primary-200
-                       font-mono text-xs transition-colors cursor-pointer"
+                       font-mono text-xs transition-colors cursor-pointer no-underline"
           >
             {children}
-          </button>
+          </a>
         );
       }
       // External link
@@ -129,6 +129,7 @@ export default function CommentList({
       {comments.map((comment) => (
         <div
           key={comment.id}
+          id={`comment-${comment.id}`}
           className={`border rounded-lg p-4 ${
             comment.status === 'resolved' ? 'bg-accent-50 border-accent-200' : 'bg-white border-primary-200'
           }`}
@@ -168,7 +169,7 @@ export default function CommentList({
           {comment.replies.length > 0 && (
             <div className="ml-4 border-l-2 border-primary-200 pl-4 space-y-3 mb-3">
               {comment.replies.map((reply) => (
-                <div key={reply.id}>
+                <div key={reply.id} id={`reply-${reply.id}`}>
                   <div className="text-xs text-primary-500 mb-1">
                     <span className="text-primary-400 font-mono mr-1">R-{reply.id}</span>
                     <span className="font-medium text-primary-700">{getAuthorName(reply)}</span>
