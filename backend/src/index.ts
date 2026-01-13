@@ -6,6 +6,7 @@ import authRoutes from './routes/auth';
 import schemaRoutes from './routes/schemas';
 import commentRoutes from './routes/comments';
 import schemaGroupRoutes from './routes/schemaGroups';
+import resolveRoutes from './routes/resolve';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -26,6 +27,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/schemas', schemaRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/schema-groups', schemaGroupRoutes);
+app.use('/api/resolve', resolveRoutes);
 
 // Health Check
 app.get('/api/health', (req, res) => {

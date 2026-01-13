@@ -98,16 +98,36 @@ export default function CommentList({
     ol: ({ children }: { children?: React.ReactNode }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
     a: ({ href, children }: { href?: string; children?: React.ReactNode }) => {
       if (href && isReferenceLink(href)) {
-        // Reference link - use window.location for guaranteed navigation
+        // Reference link - resolve via API then navigate
+        const handleReferenceClick = async (e: React.MouseEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Extract reference from children text (e.g., "@C-5" -> "C-5")
+          const childText = String(children || '');
+          const refMatch = childText.match(/@?([GSCR]-\d+)/i);
+
+          if (refMatch) {
+            try {
+              const res = await fetch(`/api/resolve/${refMatch[1]}`);
+              if (res.ok) {
+                const data = await res.json();
+                window.location.href = data.url;
+                return;
+              }
+            } catch (err) {
+              console.error('Failed to resolve reference:', err);
+            }
+          }
+
+          // Fallback to original href if API fails
+          window.location.href = href;
+        };
+
         return (
           <a
             href={href}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              console.log('Reference clicked:', href);
-              window.location.href = href;
-            }}
+            onClick={handleReferenceClick}
             className="inline-flex items-center px-1 py-0.5 rounded
                        bg-primary-100 text-primary-700 hover:bg-primary-200
                        font-mono text-xs transition-colors cursor-pointer no-underline"
