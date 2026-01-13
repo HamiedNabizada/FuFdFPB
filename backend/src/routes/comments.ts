@@ -303,6 +303,89 @@ router.get('/stats', async (req: Request, res: Response) => {
   }
 });
 
+// Letzte Aktivitäten (neueste Kommentare und Antworten)
+router.get('/recent-activity', async (req: Request, res: Response) => {
+  try {
+    const prisma: PrismaClient = (req as any).prisma;
+    const limit = Math.min(parseInt(req.query.limit as string) || 10, 20);
+
+    // Neueste Kommentare
+    const recentComments = await prisma.comment.findMany({
+      select: {
+        id: true,
+        commentText: true,
+        elementName: true,
+        xpath: true,
+        category: true,
+        createdAt: true,
+        authorName: true,
+        author: { select: { name: true } },
+        schema: { select: { id: true, name: true, version: true, groupId: true } },
+        group: { select: { id: true, name: true, version: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+
+    // Neueste Antworten
+    const recentReplies = await prisma.reply.findMany({
+      select: {
+        id: true,
+        replyText: true,
+        createdAt: true,
+        authorName: true,
+        author: { select: { name: true } },
+        comment: {
+          select: {
+            id: true,
+            elementName: true,
+            xpath: true,
+            schema: { select: { id: true, name: true, version: true, groupId: true } },
+            group: { select: { id: true, name: true, version: true } },
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+
+    // Kombinieren und nach Datum sortieren
+    const activities = [
+      ...recentComments.map(c => ({
+        type: 'comment' as const,
+        id: c.id,
+        text: c.commentText,
+        elementName: c.elementName,
+        xpath: c.xpath,
+        category: c.category,
+        authorName: c.author?.name || c.authorName || 'Anonym',
+        createdAt: c.createdAt,
+        schema: c.schema,
+        group: c.group,
+      })),
+      ...recentReplies.map(r => ({
+        type: 'reply' as const,
+        id: r.id,
+        text: r.replyText,
+        elementName: r.comment.elementName,
+        xpath: r.comment.xpath,
+        category: null,
+        authorName: r.author?.name || r.authorName || 'Anonym',
+        createdAt: r.createdAt,
+        schema: r.comment.schema,
+        group: r.comment.group,
+      })),
+    ]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, limit);
+
+    res.json({ activities });
+  } catch (error) {
+    console.error('Get recent activity error:', error);
+    res.status(500).json({ error: 'Fehler beim Laden der Aktivitäten' });
+  }
+});
+
 // Kommentar-Statistik für ein Schema
 router.get('/schema/:schemaId/stats', async (req: Request, res: Response) => {
   try {

@@ -6,6 +6,7 @@ import type { SchemaGroup } from '../types/schemaGroup';
 import SchemaGroupUpload from '../components/SchemaGroupUpload';
 import { TagBadges } from '../components/TagEditor';
 import ReviewStats from '../components/ReviewStats';
+import RecentActivity from '../components/RecentActivity';
 
 interface SchemaVersion {
   id: number;
@@ -150,6 +151,11 @@ export default function HomePage({ user }: HomePageProps) {
 
       {/* Review Stats */}
       <ReviewStats />
+
+      {/* Recent Activity */}
+      <div className="mb-8">
+        <RecentActivity />
+      </div>
 
       {/* Group Upload */}
       {uploadMode === 'group' && (
