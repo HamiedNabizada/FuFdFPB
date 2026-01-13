@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { MessageCircle, Check, Reply, Trash2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { User } from '../App';
@@ -44,6 +44,7 @@ export default function CommentList({
 }: CommentListProps) {
   const { groupId } = useParams<{ groupId?: string }>();
   const currentGroupId = groupId ? parseInt(groupId, 10) : undefined;
+  const navigate = useNavigate();
 
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');
@@ -98,17 +99,21 @@ export default function CommentList({
     ol: ({ children }: { children?: React.ReactNode }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
     a: ({ href, children }: { href?: string; children?: React.ReactNode }) => {
       if (href && isReferenceLink(href)) {
-        // Reference link - use React Router Link with special styling
+        // Reference link - use navigate for proper SPA navigation
         return (
-          <Link
-            to={href}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              navigate(href);
+            }}
             className="inline-flex items-center px-1 py-0.5 rounded
                        bg-primary-100 text-primary-700 hover:bg-primary-200
-                       font-mono text-xs transition-colors no-underline"
-            onClick={(e) => e.stopPropagation()}
+                       font-mono text-xs transition-colors cursor-pointer"
           >
             {children}
-          </Link>
+          </button>
         );
       }
       // External link
