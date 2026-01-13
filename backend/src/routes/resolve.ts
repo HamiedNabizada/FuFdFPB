@@ -27,10 +27,10 @@ router.get('/:reference', async (req: Request, res: Response) => {
     const prisma: PrismaClient = (req as any).prisma;
     const { reference } = req.params;
 
-    // Parse reference format: G-abc, S-123, C-7ps, R-rs (alphanumeric Base36)
-    const match = reference.match(/^([GSCR])-([a-z0-9]+)$/i);
+    // Parse reference format: G-abc, S-123, C-7ps, R-rs, U-a (alphanumeric Base36)
+    const match = reference.match(/^([GSCRU])-([a-z0-9]+)$/i);
     if (!match) {
-      return res.status(400).json({ error: 'Ungültiges Referenzformat. Erwartet: G-X, S-X, C-X oder R-X' });
+      return res.status(400).json({ error: 'Ungültiges Referenzformat. Erwartet: G-X, S-X, C-X, R-X oder U-X' });
     }
 
     const type = match[1].toUpperCase();
@@ -124,6 +124,25 @@ router.get('/:reference', async (req: Request, res: Response) => {
           } else if (comment.schemaId) {
             url = `/schema/${comment.schemaId}#reply-${reply.id}`;
           }
+        }
+        break;
+      }
+
+      case 'U': {
+        // User reference - return user info (no URL, just name)
+        const user = await prisma.user.findUnique({
+          where: { id },
+          select: { id: true, name: true }
+        });
+        if (user) {
+          // Users don't have a profile page, so we return special info
+          return res.json({
+            type: 'U',
+            id,
+            base36Id,
+            name: user.name,
+            url: null // No URL for users
+          });
         }
         break;
       }

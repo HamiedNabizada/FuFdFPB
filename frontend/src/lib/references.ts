@@ -1,11 +1,11 @@
 /**
- * Reference parsing utilities for @G-X, @S-X, @C-X, @R-X mentions
+ * Reference parsing utilities for @G-X, @S-X, @C-X, @R-X, @U-X mentions
  * Uses Base36 encoding for shorter, more readable IDs
  */
 
 import { fromBase36 } from './id-utils';
 
-export type ReferenceType = 'group' | 'schema' | 'comment' | 'reply';
+export type ReferenceType = 'group' | 'schema' | 'comment' | 'reply' | 'user';
 
 export interface Reference {
   type: ReferenceType;
@@ -15,8 +15,8 @@ export interface Reference {
   base36Id: string;
 }
 
-// Pattern to match @G-abc, @S-123, @C-7ps, @R-rs (alphanumeric Base36 IDs)
-const REFERENCE_PATTERN = /@([GSCR])-([a-z0-9]+)/gi;
+// Pattern to match @G-abc, @S-123, @C-7ps, @R-rs, @U-a (alphanumeric Base36 IDs)
+const REFERENCE_PATTERN = /@([GSCRU])-([a-z0-9]+)/gi;
 
 /**
  * Parse text and extract all references
@@ -39,6 +39,7 @@ export function parseReferences(text: string): Reference[] {
       case 'S': type = 'schema'; break;
       case 'C': type = 'comment'; break;
       case 'R': type = 'reply'; break;
+      case 'U': type = 'user'; break;
       default: continue;
     }
 
@@ -69,6 +70,8 @@ export function getReferenceUrl(ref: Reference, currentGroupId?: number): string
       return `#comment-${ref.id}`;
     case 'reply':
       return `#reply-${ref.id}`;
+    case 'user':
+      return '#'; // Users don't have profile pages
     default:
       return '#';
   }
@@ -83,6 +86,7 @@ export function getReferenceLabel(type: ReferenceType): string {
     case 'schema': return 'Schema';
     case 'comment': return 'Kommentar';
     case 'reply': return 'Antwort';
+    case 'user': return 'Benutzer';
     default: return '';
   }
 }
@@ -104,10 +108,17 @@ export function convertReferencesToMarkdown(text: string, currentGroupId?: numbe
       case 'S': refType = 'schema'; break;
       case 'C': refType = 'comment'; break;
       case 'R': refType = 'reply'; break;
+      case 'U': refType = 'user'; break;
       default: return match;
     }
 
     const ref: Reference = { type: refType, id, fullMatch: match, prefix: upperPrefix, base36Id: base36Id.toLowerCase() };
+
+    // User references don't have URLs, keep as special marker
+    if (refType === 'user') {
+      return `[@U-${base36Id.toLowerCase()}](#user-${id})`;
+    }
+
     const url = getReferenceUrl(ref, currentGroupId);
 
     // Return as markdown link - keep original format for display
@@ -151,6 +162,7 @@ export function splitTextWithReferences(text: string): TextPart[] {
       case 'S': refType = 'schema'; break;
       case 'C': refType = 'comment'; break;
       case 'R': refType = 'reply'; break;
+      case 'U': refType = 'user'; break;
       default: continue;
     }
 

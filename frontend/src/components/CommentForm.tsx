@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Send } from 'lucide-react';
 import type { User } from '../App';
 import { CATEGORIES, CATEGORY_OPTIONS, type CommentCategory } from '../lib/categories';
+import UserMentionAutocomplete from './UserMentionAutocomplete';
 
 interface CommentFormProps {
   user: User | null;
@@ -13,6 +14,23 @@ export default function CommentForm({ user, onSubmit, disabled }: CommentFormPro
   const [text, setText] = useState('');
   const [authorName, setAuthorName] = useState('');
   const [category, setCategory] = useState<CommentCategory>('technical');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleInsertMention = useCallback((mention: string, triggerStart: number) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const cursorPos = textarea.selectionStart;
+    const newText = text.slice(0, triggerStart) + mention + ' ' + text.slice(cursorPos);
+    setText(newText);
+
+    // Set cursor after the mention
+    setTimeout(() => {
+      const newCursorPos = triggerStart + mention.length + 1;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+      textarea.focus();
+    }, 0);
+  }, [text]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,17 +77,25 @@ export default function CommentForm({ user, onSubmit, disabled }: CommentFormPro
         ))}
       </div>
 
-      <textarea
-        placeholder="Kommentar hinzufügen..."
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        disabled={disabled}
-        className="input resize-none"
-        rows={3}
-      />
+      <div className="relative">
+        <textarea
+          ref={textareaRef}
+          placeholder="Kommentar hinzufügen... (@U für Benutzer erwähnen)"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          disabled={disabled}
+          className="input resize-none"
+          rows={3}
+        />
+        <UserMentionAutocomplete
+          textareaRef={textareaRef}
+          text={text}
+          onInsertMention={handleInsertMention}
+        />
+      </div>
       <div className="flex items-center justify-between">
         <span className="text-xs text-primary-400">
-          **fett**, *kursiv*, `code`, Listen mit - oder 1.
+          **fett**, *kursiv*, `code`, @U für Benutzer
         </span>
         <button
           type="submit"

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { MessageCircle, Check, Reply, Trash2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -86,6 +86,32 @@ export default function CommentList({
   // Check if a link is a reference link (internal)
   const isReferenceLink = (href: string) => href?.startsWith('/') || href?.startsWith('#');
 
+  // Check if this is a user reference
+  const isUserReference = (href: string) => href?.startsWith('#user-');
+
+  // Cache for resolved user names
+  const userNameCache = useRef<Map<string, string>>(new Map());
+
+  // Resolve user name from API
+  const resolveUserName = async (userId: string): Promise<string | null> => {
+    if (userNameCache.current.has(userId)) {
+      return userNameCache.current.get(userId) || null;
+    }
+    try {
+      const res = await fetch(`/api/resolve/U-${userId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.name) {
+          userNameCache.current.set(userId, data.name);
+          return data.name;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to resolve user:', err);
+    }
+    return null;
+  };
+
   // Markdown component styling
   const markdownComponents = {
     p: ({ children }: { children?: React.ReactNode }) => <p className="mb-2 last:mb-0">{children}</p>,
@@ -98,6 +124,36 @@ export default function CommentList({
     ul: ({ children }: { children?: React.ReactNode }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
     ol: ({ children }: { children?: React.ReactNode }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
     a: ({ href, children }: { href?: string; children?: React.ReactNode }) => {
+      // User reference - special styling, no link
+      if (href && isUserReference(href)) {
+        const childText = String(children || '');
+        const userMatch = childText.match(/@U-([a-z0-9]+)/i);
+
+        // UserMentionBadge component to handle async name resolution
+        const UserMentionBadge = () => {
+          const [userName, setUserName] = useState<string | null>(null);
+
+          useEffect(() => {
+            if (userMatch) {
+              resolveUserName(userMatch[1]).then(setUserName);
+            }
+          }, []);
+
+          return (
+            <span
+              className="inline-flex items-center px-1.5 py-0.5 rounded
+                         bg-blue-100 text-blue-700
+                         font-medium text-xs"
+              title={childText}
+            >
+              @{userName || childText.replace('@', '')}
+            </span>
+          );
+        };
+
+        return <UserMentionBadge />;
+      }
+
       if (href && isReferenceLink(href)) {
         // Reference link - resolve via API then navigate
         const handleReferenceClick = async (e: React.MouseEvent) => {
@@ -106,7 +162,7 @@ export default function CommentList({
 
           // Extract reference from children text (e.g., "@C-5" -> "C-5")
           const childText = String(children || '');
-          const refMatch = childText.match(/@?([GSCR]-\d+)/i);
+          const refMatch = childText.match(/@?([GSCR]-[a-z0-9]+)/i);
 
           if (refMatch) {
             try {

@@ -76,6 +76,23 @@ router.post('/login', async (req: Request, res: Response) => {
   }
 });
 
+// Alle User abrufen (für Mentions/Autocomplete)
+router.get('/users', async (req: Request, res: Response) => {
+  try {
+    const prisma: PrismaClient = (req as any).prisma;
+
+    const users = await prisma.user.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' }
+    });
+
+    res.json({ users });
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ error: 'Fehler beim Laden der User' });
+  }
+});
+
 // Aktuellen User abrufen
 router.get('/me', async (req: Request, res: Response) => {
   try {
