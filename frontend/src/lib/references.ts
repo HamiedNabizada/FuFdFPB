@@ -1,6 +1,9 @@
 /**
  * Reference parsing utilities for @G-X, @S-X, @C-X, @R-X mentions
+ * Uses Base36 encoding for shorter, more readable IDs
  */
+
+import { fromBase36 } from './id-utils';
 
 export type ReferenceType = 'group' | 'schema' | 'comment' | 'reply';
 
@@ -9,10 +12,11 @@ export interface Reference {
   id: number;
   fullMatch: string;
   prefix: string;
+  base36Id: string;
 }
 
-// Pattern to match @G-123, @S-456, @C-789, @R-012
-const REFERENCE_PATTERN = /@([GSCR])-(\d+)/gi;
+// Pattern to match @G-abc, @S-123, @C-7ps, @R-rs (alphanumeric Base36 IDs)
+const REFERENCE_PATTERN = /@([GSCR])-([a-z0-9]+)/gi;
 
 /**
  * Parse text and extract all references
@@ -26,7 +30,8 @@ export function parseReferences(text: string): Reference[] {
 
   while ((match = REFERENCE_PATTERN.exec(text)) !== null) {
     const prefix = match[1].toUpperCase();
-    const id = parseInt(match[2], 10);
+    const base36Id = match[2].toLowerCase();
+    const id = fromBase36(base36Id);
 
     let type: ReferenceType;
     switch (prefix) {
@@ -41,7 +46,8 @@ export function parseReferences(text: string): Reference[] {
       type,
       id,
       fullMatch: match[0],
-      prefix
+      prefix,
+      base36Id
     });
   }
 
@@ -49,21 +55,17 @@ export function parseReferences(text: string): Reference[] {
 }
 
 /**
- * Get the URL for a reference
+ * Get the URL for a reference (used as fallback, API resolution is preferred)
  */
 export function getReferenceUrl(ref: Reference, currentGroupId?: number): string {
   switch (ref.type) {
     case 'group':
       return `/group/${ref.id}`;
     case 'schema':
-      // Schema links should go to the group with the schema selected
-      // We'd need the groupId to create a proper link - for now just use schema param
       return currentGroupId
         ? `/group/${currentGroupId}?schemaId=${ref.id}`
-        : `/group/1?schemaId=${ref.id}`; // Fallback
+        : `/group/1?schemaId=${ref.id}`;
     case 'comment':
-      // Comments are trickier - we'd need to know which group/schema they belong to
-      // For now, just anchor to the comment ID
       return `#comment-${ref.id}`;
     case 'reply':
       return `#reply-${ref.id}`;
@@ -92,9 +94,9 @@ export function getReferenceLabel(type: ReferenceType): string {
 export function convertReferencesToMarkdown(text: string, currentGroupId?: number): string {
   REFERENCE_PATTERN.lastIndex = 0;
 
-  return text.replace(REFERENCE_PATTERN, (match, prefix: string, idStr: string) => {
+  return text.replace(REFERENCE_PATTERN, (match, prefix: string, base36Id: string) => {
     const upperPrefix = prefix.toUpperCase();
-    const id = parseInt(idStr, 10);
+    const id = fromBase36(base36Id.toLowerCase());
 
     let refType: ReferenceType;
     switch (upperPrefix) {
@@ -105,10 +107,10 @@ export function convertReferencesToMarkdown(text: string, currentGroupId?: numbe
       default: return match;
     }
 
-    const ref: Reference = { type: refType, id, fullMatch: match, prefix: upperPrefix };
+    const ref: Reference = { type: refType, id, fullMatch: match, prefix: upperPrefix, base36Id: base36Id.toLowerCase() };
     const url = getReferenceUrl(ref, currentGroupId);
 
-    // Return as markdown link with special styling class hint
+    // Return as markdown link - keep original format for display
     return `[${match}](${url})`;
   });
 }
@@ -140,7 +142,8 @@ export function splitTextWithReferences(text: string): TextPart[] {
 
     // Parse the reference
     const prefix = match[1].toUpperCase();
-    const id = parseInt(match[2], 10);
+    const base36Id = match[2].toLowerCase();
+    const id = fromBase36(base36Id);
 
     let refType: ReferenceType;
     switch (prefix) {
@@ -158,7 +161,8 @@ export function splitTextWithReferences(text: string): TextPart[] {
         type: refType,
         id,
         fullMatch: match[0],
-        prefix
+        prefix,
+        base36Id
       }
     });
 

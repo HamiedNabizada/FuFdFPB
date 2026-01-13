@@ -10,6 +10,7 @@ import RecentActivity from '../components/RecentActivity';
 import CommentSearch from '../components/CommentSearch';
 import MyComments from '../components/MyComments';
 import CollapsibleSection from '../components/CollapsibleSection';
+import { formatId } from '../lib/id-utils';
 
 interface HomePageProps {
   user: UserType | null;
@@ -298,7 +299,7 @@ export default function HomePage({ user }: HomePageProps) {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-1">
-                        <span className="text-xs text-primary-400 font-mono">G-{group.id}</span>
+                        <span className="text-xs text-primary-400 font-mono">{formatId('G', group.id)}</span>
                         <h3 className="font-semibold text-primary-900">{group.name}</h3>
                         <span className="badge-primary">v{group.version}</span>
                         <TagBadges tags={group.tags} />
@@ -344,7 +345,7 @@ export default function HomePage({ user }: HomePageProps) {
                             : 'bg-gray-50 text-gray-600'
                         }`}
                       >
-                        <span className="opacity-60">S-{schema.id}</span> {schema.filename}
+                        <span className="opacity-60">{formatId('S', schema.id)}</span> {schema.filename}
                       </span>
                     ))}
                   </div>

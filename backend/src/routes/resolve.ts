@@ -4,7 +4,22 @@ import { PrismaClient } from '@prisma/client';
 const router = Router();
 
 /**
+ * Convert Base36 string to number
+ */
+function fromBase36(str: string): number {
+  return parseInt(str.toLowerCase(), 36);
+}
+
+/**
+ * Convert number to Base36 string
+ */
+function toBase36(num: number): string {
+  return num.toString(36).toLowerCase();
+}
+
+/**
  * Resolve a reference (G-X, S-X, C-X, R-X) to a full URL
+ * Accepts both numeric IDs and Base36 encoded IDs
  * GET /api/resolve/:reference
  */
 router.get('/:reference', async (req: Request, res: Response) => {
@@ -12,14 +27,15 @@ router.get('/:reference', async (req: Request, res: Response) => {
     const prisma: PrismaClient = (req as any).prisma;
     const { reference } = req.params;
 
-    // Parse reference format: G-123, S-456, C-789, R-012
-    const match = reference.match(/^([GSCR])-(\d+)$/i);
+    // Parse reference format: G-abc, S-123, C-7ps, R-rs (alphanumeric Base36)
+    const match = reference.match(/^([GSCR])-([a-z0-9]+)$/i);
     if (!match) {
       return res.status(400).json({ error: 'Ungültiges Referenzformat. Erwartet: G-X, S-X, C-X oder R-X' });
     }
 
     const type = match[1].toUpperCase();
-    const id = parseInt(match[2], 10);
+    const base36Id = match[2].toLowerCase();
+    const id = fromBase36(base36Id);
 
     let url: string | null = null;
 
@@ -114,10 +130,10 @@ router.get('/:reference', async (req: Request, res: Response) => {
     }
 
     if (!url) {
-      return res.status(404).json({ error: `${type}-${id} nicht gefunden` });
+      return res.status(404).json({ error: `${type}-${base36Id} nicht gefunden` });
     }
 
-    res.json({ url, type, id });
+    res.json({ url, type, id, base36Id });
   } catch (error) {
     console.error('Resolve reference error:', error);
     res.status(500).json({ error: 'Fehler beim Auflösen der Referenz' });

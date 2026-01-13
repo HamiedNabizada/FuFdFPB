@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import type { User } from '../App';
 import { CATEGORIES, type CommentCategory } from '../lib/categories';
 import { convertReferencesToMarkdown } from '../lib/references';
+import { formatId } from '../lib/id-utils';
 
 export interface CommentReply {
   id: number;
@@ -157,7 +158,7 @@ export default function CommentList({
           {/* Comment Header */}
           <div className="flex items-start justify-between mb-2">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-primary-400 font-mono">C-{comment.id}</span>
+              <span className="text-xs text-primary-400 font-mono">{formatId('C', comment.id)}</span>
               <span className="font-medium text-primary-900">{getAuthorName(comment)}</span>
               {comment.category && CATEGORIES[comment.category] && (
                 <span
@@ -191,7 +192,7 @@ export default function CommentList({
               {comment.replies.map((reply) => (
                 <div key={reply.id} id={`reply-${reply.id}`}>
                   <div className="text-xs text-primary-500 mb-1">
-                    <span className="text-primary-400 font-mono mr-1">R-{reply.id}</span>
+                    <span className="text-primary-400 font-mono mr-1">{formatId('R', reply.id)}</span>
                     <span className="font-medium text-primary-700">{getAuthorName(reply)}</span>
                     <span className="ml-2">{formatDate(reply.createdAt)}</span>
                   </div>

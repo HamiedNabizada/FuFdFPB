@@ -6,6 +6,7 @@ import type { User } from '../App';
 import { parseXsd, findNodeByXpath, type XsdNode } from '../lib/xsd-parser';
 import { exportGroupCommentsToMarkdown, downloadMarkdown } from '../lib/export-comments';
 import { convertReferencesToMarkdown } from '../lib/references';
+import { formatId } from '../lib/id-utils';
 import SchemaTree from '../components/SchemaTree';
 import SchemaSearch from '../components/SchemaSearch';
 import SchemaBreadcrumb from '../components/SchemaBreadcrumb';
@@ -468,7 +469,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-primary-400 font-mono">G-{group.id}</span>
+                <span className="text-xs text-primary-400 font-mono">{formatId('G', group.id)}</span>
                 <h1 className="font-semibold text-primary-900">{group.name}</h1>
                 <span className="badge-primary">v{group.version}</span>
               </div>
@@ -602,7 +603,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
                   }`}
                 >
                   <FileText size={16} className={selectedSchemaId === schema.id ? 'text-primary-600' : 'text-primary-300'} />
-                  <span className="text-xs text-primary-400 font-mono">S-{schema.id}</span>
+                  <span className="text-xs text-primary-400 font-mono">{formatId('S', schema.id)}</span>
                   <span className={`flex-1 truncate ${selectedSchemaId === schema.id ? 'text-primary-900 font-medium' : 'text-primary-700'}`}>
                     {schema.filename}
                   </span>
@@ -744,7 +745,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
                       }`}>
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs text-primary-400 font-mono">C-{comment.id}</span>
+                            <span className="text-xs text-primary-400 font-mono">{formatId('C', comment.id)}</span>
                             <span className="font-medium text-sm text-primary-900">{comment.authorName}</span>
                             {comment.category && CATEGORIES[comment.category as CommentCategory] && (
                               <span
@@ -832,7 +833,7 @@ export default function SchemaGroupPage({ user }: SchemaGroupPageProps) {
                           <div className="mt-3 pl-3 border-l-2 border-primary-200 space-y-2">
                             {comment.replies.map((reply) => (
                               <div key={reply.id} id={`reply-${reply.id}`} className="text-sm">
-                                <span className="text-xs text-primary-400 font-mono mr-1">R-{reply.id}</span>
+                                <span className="text-xs text-primary-400 font-mono mr-1">{formatId('R', reply.id)}</span>
                                 <span className="font-medium text-primary-800">{reply.authorName}</span>
                                 <span className="text-primary-300 mx-1">·</span>
                                 <span className="text-xs text-primary-400">
