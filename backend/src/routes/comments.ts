@@ -303,6 +303,77 @@ router.get('/stats', async (req: Request, res: Response) => {
   }
 });
 
+// Meine Kommentare (für eingeloggten User)
+router.get('/my-comments', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const prisma: PrismaClient = (req as any).prisma;
+    const userId = (req as any).userId;
+
+    const comments = await prisma.comment.findMany({
+      where: { authorId: userId },
+      select: {
+        id: true,
+        commentText: true,
+        elementName: true,
+        xpath: true,
+        status: true,
+        category: true,
+        createdAt: true,
+        schema: { select: { id: true, name: true, version: true, groupId: true } },
+        group: { select: { id: true, name: true, version: true } },
+        replies: { select: { id: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ comments });
+  } catch (error) {
+    console.error('Get my comments error:', error);
+    res.status(500).json({ error: 'Fehler beim Laden der Kommentare' });
+  }
+});
+
+// Volltext-Suche über Kommentare
+router.get('/search', async (req: Request, res: Response) => {
+  try {
+    const prisma: PrismaClient = (req as any).prisma;
+    const query = (req.query.q as string || '').trim();
+
+    if (!query || query.length < 2) {
+      return res.status(400).json({ error: 'Suchbegriff muss mindestens 2 Zeichen haben' });
+    }
+
+    const comments = await prisma.comment.findMany({
+      where: {
+        OR: [
+          { commentText: { contains: query } },
+          { elementName: { contains: query } },
+        ],
+      },
+      select: {
+        id: true,
+        commentText: true,
+        elementName: true,
+        xpath: true,
+        status: true,
+        category: true,
+        createdAt: true,
+        authorName: true,
+        author: { select: { name: true } },
+        schema: { select: { id: true, name: true, version: true, groupId: true } },
+        group: { select: { id: true, name: true, version: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+
+    res.json({ comments, query });
+  } catch (error) {
+    console.error('Search comments error:', error);
+    res.status(500).json({ error: 'Fehler bei der Suche' });
+  }
+});
+
 // Letzte Aktivitäten (neueste Kommentare und Antworten)
 router.get('/recent-activity', async (req: Request, res: Response) => {
   try {

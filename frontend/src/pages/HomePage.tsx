@@ -7,6 +7,8 @@ import SchemaGroupUpload from '../components/SchemaGroupUpload';
 import { TagBadges } from '../components/TagEditor';
 import ReviewStats from '../components/ReviewStats';
 import RecentActivity from '../components/RecentActivity';
+import CommentSearch from '../components/CommentSearch';
+import MyComments from '../components/MyComments';
 
 interface SchemaVersion {
   id: number;
@@ -151,6 +153,12 @@ export default function HomePage({ user }: HomePageProps) {
 
       {/* Review Stats */}
       <ReviewStats />
+
+      {/* Search and My Comments - side by side on larger screens */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <CommentSearch />
+        {user && <MyComments />}
+      </div>
 
       {/* Recent Activity */}
       <div className="mb-8">
