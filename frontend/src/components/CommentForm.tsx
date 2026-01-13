@@ -14,21 +14,53 @@ export default function CommentForm({ user, onSubmit, disabled }: CommentFormPro
   const [text, setText] = useState('');
   const [authorName, setAuthorName] = useState('');
   const [category, setCategory] = useState<CommentCategory>('technical');
+  const [cursorPosition, setCursorPosition] = useState(0);
+  const [showMentionDropdown, setShowMentionDropdown] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleInsertMention = useCallback((mention: string, triggerStart: number) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
+  // Check if we should show the mention dropdown
+  const checkForMentionTrigger = useCallback((newText: string, newCursorPos: number) => {
+    const textBeforeCursor = newText.slice(0, newCursorPos);
+    const match = textBeforeCursor.match(/@U([a-zA-Z]*)$/i);
+    setShowMentionDropdown(!!match);
+  }, []);
 
-    const cursorPos = textarea.selectionStart;
-    const newText = text.slice(0, triggerStart) + mention + ' ' + text.slice(cursorPos);
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = e.target.value;
+    const newCursorPos = e.target.selectionStart;
     setText(newText);
+    setCursorPosition(newCursorPos);
+    checkForMentionTrigger(newText, newCursorPos);
+  };
+
+  const handleKeyUp = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Update cursor position on key navigation
+    const newCursorPos = e.currentTarget.selectionStart;
+    setCursorPosition(newCursorPos);
+    checkForMentionTrigger(text, newCursorPos);
+  };
+
+  const handleClick = (e: React.MouseEvent<HTMLTextAreaElement>) => {
+    const newCursorPos = e.currentTarget.selectionStart;
+    setCursorPosition(newCursorPos);
+    checkForMentionTrigger(text, newCursorPos);
+  };
+
+  const handleSelectUser = useCallback((mention: string, replaceFrom: number, replaceTo: number) => {
+    const newText = text.slice(0, replaceFrom) + mention + ' ' + text.slice(replaceTo);
+    setText(newText);
+    setShowMentionDropdown(false);
 
     // Set cursor after the mention
+    const newCursorPos = replaceFrom + mention.length + 1;
+    setCursorPosition(newCursorPos);
+
+    // Focus and set cursor position
     setTimeout(() => {
-      const newCursorPos = triggerStart + mention.length + 1;
-      textarea.setSelectionRange(newCursorPos, newCursorPos);
-      textarea.focus();
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+      }
     }, 0);
   }, [text]);
 
@@ -41,6 +73,8 @@ export default function CommentForm({ user, onSubmit, disabled }: CommentFormPro
     setText('');
     setAuthorName('');
     setCategory('technical');
+    setCursorPosition(0);
+    setShowMentionDropdown(false);
   };
 
   return (
@@ -82,15 +116,19 @@ export default function CommentForm({ user, onSubmit, disabled }: CommentFormPro
           ref={textareaRef}
           placeholder="Kommentar hinzufügen... (@U für Benutzer erwähnen)"
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={handleTextChange}
+          onKeyUp={handleKeyUp}
+          onClick={handleClick}
           disabled={disabled}
           className="input resize-none"
           rows={3}
         />
         <UserMentionAutocomplete
-          textareaRef={textareaRef}
           text={text}
-          onInsertMention={handleInsertMention}
+          cursorPosition={cursorPosition}
+          onSelectUser={handleSelectUser}
+          onClose={() => setShowMentionDropdown(false)}
+          visible={showMentionDropdown}
         />
       </div>
       <div className="flex items-center justify-between">
