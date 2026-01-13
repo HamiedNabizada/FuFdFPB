@@ -6,12 +6,40 @@ Web-Plattform zur kollaborativen Diskussion von XML-Schema (XSD) Dateien im Rahm
 
 ## Features
 
-- **Schema-Upload**: XSD-Dateien hochladen und versionieren (v1.0, v1.1, etc.)
-- **Interaktive Navigation**: Schema-Struktur als Baum mit Expand/Collapse
-- **Element-Details**: Attribute, Dokumentation, XPath für jedes Element
-- **Kommentar-System**: Diskussionen pro Element mit Antworten
+### Schema-Verwaltung
+- **Schema-Upload**: Einzelne XSD-Dateien oder Schema-Gruppen hochladen
+- **Schema-Gruppen**: Mehrere zusammengehörige XSD-Dateien mit automatischer Abhängigkeitserkennung (xs:import, xs:include)
+- **Versionierung**: Schemas versionieren (v1.0, v1.1, etc.)
+- **Tags**: Schemas und Gruppen mit Tags organisieren
+
+### Navigation & Visualisierung
+- **Interaktive Baumansicht**: Schema-Struktur mit Expand/Collapse
+- **Syntax-Highlighting**: XSD-Code farblich hervorgehoben
+- **Dependency Graph**: Interaktive Visualisierung der Datei-Abhängigkeiten (D3.js)
+- **Ref-Navigation**: Klickbare Referenzen zu anderen Typen/Elementen
+
+### XSD-Hilfe für Nicht-Experten
+- **Attribut-Erklärungen**: Tooltips für minOccurs, maxOccurs, type etc.
+- **Typ-Erklärungen**: Erläuterung von complexType, sequence, choice etc.
+- **Dokumentations-Anzeige**: xs:annotation/xs:documentation prominent dargestellt
+
+### Kommentar-System
+- **Element-Kommentare**: Diskussionen direkt an Schema-Elementen
+- **Gruppen-Kommentare**: Übergreifende Diskussionen zu Schema-Gruppen
+- **Kategorien**: Redaktionell, Technisch, Frage, Diskussion, Fehler (mit Farbcodes)
 - **Status-Tracking**: Kommentare als "erledigt" markieren
+- **Antworten**: Threaded Discussions mit Reply-Funktion
 - **Gast-Kommentare**: Auch ohne Login kommentieren (mit Namen)
+
+### Dashboard & Suche
+- **Review-Statistiken**: Fortschrittsanzeige (offen/erledigt) mit Kategorie-Filter
+- **Volltext-Suche**: Alle Kommentare durchsuchen mit Highlighting
+- **Meine Kommentare**: Persönliche Kommentar-Übersicht mit Status-Filter
+- **Letzte Aktivität**: Feed der neuesten Kommentare und Antworten
+
+### Export
+- **Kommentar-Export**: Als Markdown oder CSV exportieren
+- **Kategorie-/Status-Filter**: Nur bestimmte Kommentare exportieren
 
 ## Tech Stack
 
@@ -254,31 +282,44 @@ In Plesk die Node.js App so konfigurieren, dass sie unter `/api` erreichbar ist.
 XSD-Review-Tool/
 ├── backend/
 │   ├── prisma/
-│   │   └── schema.prisma      # Datenbank-Schema
+│   │   └── schema.prisma        # Datenbank-Schema (inkl. SchemaGroup, Dependencies)
 │   ├── src/
-│   │   ├── index.ts           # Express Server
+│   │   ├── index.ts             # Express Server
 │   │   ├── routes/
-│   │   │   ├── auth.ts        # Login/Register
-│   │   │   ├── schemas.ts     # Schema CRUD
-│   │   │   └── comments.ts    # Kommentar API
+│   │   │   ├── auth.ts          # Login/Register
+│   │   │   ├── schemas.ts       # Schema CRUD
+│   │   │   ├── schemaGroups.ts  # Schema-Gruppen API
+│   │   │   └── comments.ts      # Kommentar API (inkl. Search, Stats, Activity)
 │   │   └── middleware/
-│   │       └── auth.ts        # JWT Middleware
+│   │       └── auth.ts          # JWT Middleware
 │   └── package.json
 ├── frontend/
 │   ├── src/
-│   │   ├── App.tsx            # Hauptkomponente
+│   │   ├── App.tsx              # Hauptkomponente mit Routing
 │   │   ├── lib/
-│   │   │   └── xsd-parser.ts  # XSD zu Baum-Konverter
+│   │   │   ├── xsd-parser.ts    # XSD zu Baum-Konverter
+│   │   │   └── categories.ts    # Kommentar-Kategorien Definition
 │   │   ├── components/
 │   │   │   ├── Header.tsx
-│   │   │   ├── SchemaTree.tsx
-│   │   │   ├── ElementDetails.tsx
-│   │   │   ├── CommentList.tsx
-│   │   │   └── CommentForm.tsx
-│   │   └── pages/
-│   │       ├── HomePage.tsx   # Schema-Liste
-│   │       ├── SchemaPage.tsx # Schema-Ansicht
-│   │       └── LoginPage.tsx  # Authentifizierung
+│   │   │   ├── SchemaTree.tsx         # Interaktiver Baum
+│   │   │   ├── ElementDetails.tsx     # Details + XSD-Hilfe
+│   │   │   ├── CommentList.tsx        # Kommentare mit Kategorien
+│   │   │   ├── CommentForm.tsx        # Formular mit Kategorie-Auswahl
+│   │   │   ├── ReviewStats.tsx        # Dashboard mit Statistiken
+│   │   │   ├── RecentActivity.tsx     # Aktivitäts-Feed
+│   │   │   ├── CommentSearch.tsx      # Volltext-Suche
+│   │   │   ├── MyComments.tsx         # Persönliche Kommentare
+│   │   │   ├── SchemaGroupUpload.tsx  # Multi-File Upload
+│   │   │   ├── DependencyGraph.tsx    # D3.js Visualisierung
+│   │   │   ├── TagEditor.tsx          # Tag-Verwaltung
+│   │   │   └── ExportComments.tsx     # Export-Dialog
+│   │   ├── pages/
+│   │   │   ├── HomePage.tsx           # Dashboard + Schema-Liste
+│   │   │   ├── SchemaPage.tsx         # Einzelschema-Ansicht
+│   │   │   ├── SchemaGroupPage.tsx    # Gruppen-Ansicht
+│   │   │   └── LoginPage.tsx          # Authentifizierung
+│   │   └── types/
+│   │       └── schemaGroup.ts         # TypeScript Interfaces
 │   └── package.json
 └── README.md
 ```
@@ -291,13 +332,26 @@ XSD-Review-Tool/
 - `GET /api/auth/me` - Aktueller Benutzer
 
 ### Schemas
-- `GET /api/schemas` - Alle Schemas (gruppiert nach Name)
-- `GET /api/schemas/:id` - Einzelnes Schema mit Kommentaren
+- `GET /api/schemas` - Alle Einzelschemas (gruppiert nach Name)
+- `GET /api/schemas/:id` - Schema mit Kommentaren und Abhängigkeiten
 - `POST /api/schemas` - Neues Schema hochladen
 
+### Schema-Gruppen
+- `GET /api/schema-groups` - Alle Gruppen mit Schemas
+- `GET /api/schema-groups/:id` - Gruppe mit allen Schemas und Kommentaren
+- `POST /api/schema-groups` - Neue Gruppe erstellen (Multi-File-Upload)
+- `DELETE /api/schema-groups/:id` - Gruppe löschen
+- `POST /api/schema-groups/:id/comments` - Gruppen-Kommentar hinzufügen
+- `GET /api/schema-groups/:id/dependencies` - Abhängigkeitsgraph
+
 ### Comments
-- `POST /api/schemas/:id/comments` - Kommentar hinzufügen
-- `PATCH /api/comments/:id/resolve` - Als erledigt markieren
+- `POST /api/schemas/:id/comments` - Kommentar hinzufügen (mit Kategorie)
+- `GET /api/comments/stats` - Globale Statistik
+- `GET /api/comments/by-status/:status` - Kommentare nach Status
+- `GET /api/comments/search?q=...` - Volltext-Suche
+- `GET /api/comments/my-comments` - Eigene Kommentare (Auth)
+- `GET /api/comments/recent-activity` - Letzte Aktivitäten
+- `PATCH /api/comments/:id/status` - Status ändern (open/resolved)
 - `POST /api/comments/:id/reply` - Antwort hinzufügen
 - `DELETE /api/comments/:id` - Kommentar löschen
 
@@ -305,9 +359,18 @@ XSD-Review-Tool/
 
 ```
 User (id, email, password, name)
-  └── Schema (id, name, version, content, uploadedBy)
-        └── Comment (id, schemaId, xpath, elementName, commentText, status)
-              └── Reply (id, commentId, replyText)
+  │
+  ├── SchemaGroup (id, name, version, description, uploadedBy, tags[])
+  │     ├── Schema (id, name, version, filename, role, content)
+  │     │     ├── Comment (id, xpath, elementName, commentText, status, category)
+  │     │     │     └── Reply (id, replyText, authorId)
+  │     │     └── SchemaDependency (sourceId, targetId, type, namespace)
+  │     └── Comment (groupId, commentText, status, category) [Gruppen-Kommentar]
+  │
+  └── Schema (standalone, ohne Gruppe)
+        └── Comment (...)
+
+Kommentar-Kategorien: editorial, technical, question, discussion, error
 ```
 
 ## Lizenz

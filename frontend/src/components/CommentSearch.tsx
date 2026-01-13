@@ -18,7 +18,11 @@ interface SearchResult {
   replies?: { id: number }[];
 }
 
-export default function CommentSearch() {
+interface CommentSearchProps {
+  embedded?: boolean;
+}
+
+export default function CommentSearch({ embedded = false }: CommentSearchProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -82,13 +86,8 @@ export default function CommentSearch() {
     );
   };
 
-  return (
-    <div className="card p-6 mb-8">
-      <div className="flex items-center gap-2 mb-4">
-        <Search className="w-5 h-5 text-primary-600" />
-        <h2 className="text-lg font-semibold text-primary-900">Kommentare durchsuchen</h2>
-      </div>
-
+  const content = (
+    <>
       <form onSubmit={handleSearch} className="flex gap-2 mb-4">
         <div className="relative flex-1">
           <input
@@ -181,6 +180,20 @@ export default function CommentSearch() {
           )}
         </div>
       )}
+    </>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
+  return (
+    <div className="card p-6 mb-8">
+      <div className="flex items-center gap-2 mb-4">
+        <Search className="w-5 h-5 text-primary-600" />
+        <h2 className="text-lg font-semibold text-primary-900">Kommentare durchsuchen</h2>
+      </div>
+      {content}
     </div>
   );
 }

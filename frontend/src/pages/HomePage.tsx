@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Upload, FileText, MessageCircle, ChevronRight, FolderOpen, Files, Calendar, User } from 'lucide-react';
+import { Upload, FileText, MessageCircle, ChevronRight, ChevronDown, FolderOpen, Files, Calendar, User, Search, Clock } from 'lucide-react';
 import type { User as UserType } from '../App';
 import type { SchemaGroup } from '../types/schemaGroup';
 import SchemaGroupUpload from '../components/SchemaGroupUpload';
@@ -9,6 +9,7 @@ import ReviewStats from '../components/ReviewStats';
 import RecentActivity from '../components/RecentActivity';
 import CommentSearch from '../components/CommentSearch';
 import MyComments from '../components/MyComments';
+import CollapsibleSection from '../components/CollapsibleSection';
 
 interface SchemaVersion {
   id: number;
@@ -24,6 +25,8 @@ interface HomePageProps {
 
 type UploadMode = 'none' | 'single' | 'group';
 
+const INITIAL_SHOW_COUNT = 3;
+
 export default function HomePage({ user }: HomePageProps) {
   const [schemas, setSchemas] = useState<Record<string, SchemaVersion[]>>({});
   const [groups, setGroups] = useState<SchemaGroup[]>([]);
@@ -31,6 +34,8 @@ export default function HomePage({ user }: HomePageProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadForm, setUploadForm] = useState({ name: '', version: '', content: '' });
   const [uploadMode, setUploadMode] = useState<UploadMode>('none');
+  const [showAllGroups, setShowAllGroups] = useState(false);
+  const [showAllSchemas, setShowAllSchemas] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -111,6 +116,13 @@ export default function HomePage({ user }: HomePageProps) {
 
   const standaloneSchemas = Object.entries(schemas);
 
+  // Pagination logic
+  const displayedGroups = showAllGroups ? groups : groups.slice(0, INITIAL_SHOW_COUNT);
+  const hasMoreGroups = groups.length > INITIAL_SHOW_COUNT;
+
+  const displayedSchemas = showAllSchemas ? standaloneSchemas : standaloneSchemas.slice(0, INITIAL_SHOW_COUNT);
+  const hasMoreSchemas = standaloneSchemas.length > INITIAL_SHOW_COUNT;
+
   if (loading) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-16">
@@ -151,18 +163,48 @@ export default function HomePage({ user }: HomePageProps) {
         )}
       </div>
 
-      {/* Review Stats */}
+      {/* Review Stats - always visible */}
       <ReviewStats />
 
-      {/* Search and My Comments - side by side on larger screens */}
+      {/* Dashboard Sections - collapsible */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <CommentSearch />
-        {user && <MyComments />}
+        <CollapsibleSection
+          id="comment-search"
+          title="Kommentare durchsuchen"
+          icon={<Search className="w-5 h-5 text-primary-600" />}
+          defaultOpen={false}
+        >
+          <div className="p-4">
+            <CommentSearch embedded />
+          </div>
+        </CollapsibleSection>
+
+        {user && (
+          <CollapsibleSection
+            id="my-comments"
+            title="Meine Kommentare"
+            icon={<User className="w-5 h-5 text-primary-600" />}
+            defaultOpen={false}
+          >
+            <div className="p-4">
+              <MyComments embedded />
+            </div>
+          </CollapsibleSection>
+        )}
       </div>
 
-      {/* Recent Activity */}
+      {/* Recent Activity - collapsible */}
       <div className="mb-8">
-        <RecentActivity />
+        <CollapsibleSection
+          id="recent-activity"
+          title="Letzte Aktivität"
+          icon={<Clock className="w-5 h-5 text-primary-600" />}
+          defaultOpen={false}
+        >
+          <div className="p-4">
+            <RecentActivity embedded />
+          </div>
+        </CollapsibleSection>
       </div>
 
       {/* Group Upload */}
@@ -257,7 +299,7 @@ export default function HomePage({ user }: HomePageProps) {
           </div>
 
           <div className="space-y-3">
-            {groups.map((group) => (
+            {displayedGroups.map((group) => (
               <Link
                 key={group.id}
                 to={`/group/${group.id}`}
@@ -320,6 +362,23 @@ export default function HomePage({ user }: HomePageProps) {
               </Link>
             ))}
           </div>
+
+          {/* Show more button */}
+          {hasMoreGroups && (
+            <button
+              onClick={() => setShowAllGroups(!showAllGroups)}
+              className="mt-3 w-full py-2 text-sm text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded-lg transition-colors flex items-center justify-center gap-1"
+            >
+              {showAllGroups ? (
+                <>Weniger anzeigen</>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4" />
+                  {groups.length - INITIAL_SHOW_COUNT} weitere anzeigen
+                </>
+              )}
+            </button>
+          )}
         </section>
       )}
 
@@ -342,47 +401,66 @@ export default function HomePage({ user }: HomePageProps) {
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {standaloneSchemas.map(([name, versions]) => (
-              <div key={name} className="card overflow-hidden">
-                <div className="px-4 py-3 bg-primary-50 border-b border-primary-100">
-                  <h3 className="font-semibold text-primary-900 flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-primary-600" />
-                    {name}
-                  </h3>
-                </div>
-                <div className="divide-y divide-primary-50">
-                  {versions.map((version) => (
-                    <Link
-                      key={version.id}
-                      to={`/schema/${version.id}`}
-                      className="flex items-center justify-between px-4 py-3 hover:bg-primary-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-4">
-                        <span className="badge-primary">v{version.version}</span>
-                        <span className="text-sm text-primary-500 flex items-center gap-1">
-                          <User className="w-3.5 h-3.5" />
-                          {version.uploadedBy}
-                        </span>
-                        <span className="text-sm text-primary-400">
-                          {new Date(version.createdAt).toLocaleDateString('de-DE')}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {version.commentCount > 0 && (
-                          <span className="flex items-center gap-1.5 text-sm text-primary-500">
-                            <MessageCircle className="w-4 h-4" />
-                            {version.commentCount}
+          <>
+            <div className="space-y-3">
+              {displayedSchemas.map(([name, versions]) => (
+                <div key={name} className="card overflow-hidden">
+                  <div className="px-4 py-3 bg-primary-50 border-b border-primary-100">
+                    <h3 className="font-semibold text-primary-900 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-primary-600" />
+                      {name}
+                    </h3>
+                  </div>
+                  <div className="divide-y divide-primary-50">
+                    {versions.map((version) => (
+                      <Link
+                        key={version.id}
+                        to={`/schema/${version.id}`}
+                        className="flex items-center justify-between px-4 py-3 hover:bg-primary-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-4">
+                          <span className="badge-primary">v{version.version}</span>
+                          <span className="text-sm text-primary-500 flex items-center gap-1">
+                            <User className="w-3.5 h-3.5" />
+                            {version.uploadedBy}
                           </span>
-                        )}
-                        <ChevronRight className="w-5 h-5 text-primary-300" />
-                      </div>
-                    </Link>
-                  ))}
+                          <span className="text-sm text-primary-400">
+                            {new Date(version.createdAt).toLocaleDateString('de-DE')}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {version.commentCount > 0 && (
+                            <span className="flex items-center gap-1.5 text-sm text-primary-500">
+                              <MessageCircle className="w-4 h-4" />
+                              {version.commentCount}
+                            </span>
+                          )}
+                          <ChevronRight className="w-5 h-5 text-primary-300" />
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+
+            {/* Show more button */}
+            {hasMoreSchemas && (
+              <button
+                onClick={() => setShowAllSchemas(!showAllSchemas)}
+                className="mt-3 w-full py-2 text-sm text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded-lg transition-colors flex items-center justify-center gap-1"
+              >
+                {showAllSchemas ? (
+                  <>Weniger anzeigen</>
+                ) : (
+                  <>
+                    <ChevronDown className="w-4 h-4" />
+                    {standaloneSchemas.length - INITIAL_SHOW_COUNT} weitere anzeigen
+                  </>
+                )}
+              </button>
+            )}
+          </>
         )}
       </section>
     </div>

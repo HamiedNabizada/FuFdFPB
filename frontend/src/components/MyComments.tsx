@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { User, FileText, ExternalLink, CheckCircle, Clock, MessageCircle } from 'lucide-react';
+import { User, FileText, ExternalLink, CheckCircle, Clock, MessageCircle, ChevronDown } from 'lucide-react';
 import { CATEGORIES, type CommentCategory } from '../lib/categories';
 
 interface MyComment {
@@ -16,10 +16,17 @@ interface MyComment {
   replies: { id: number }[];
 }
 
-export default function MyComments() {
+interface MyCommentsProps {
+  embedded?: boolean;
+}
+
+const INITIAL_SHOW_COUNT = 5;
+
+export default function MyComments({ embedded = false }: MyCommentsProps) {
   const [comments, setComments] = useState<MyComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'open' | 'resolved'>('all');
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     fetchMyComments();
@@ -76,13 +83,15 @@ export default function MyComments() {
     return c.status === filter;
   });
 
+  const displayedComments = showAll ? filteredComments : filteredComments.slice(0, INITIAL_SHOW_COUNT);
+  const hasMore = filteredComments.length > INITIAL_SHOW_COUNT;
+
   const openCount = comments.filter((c) => c.status === 'open').length;
   const resolvedCount = comments.filter((c) => c.status === 'resolved').length;
 
   if (loading) {
-    return (
-      <div className="card p-6 animate-pulse">
-        <div className="h-6 bg-primary-100 rounded w-1/3 mb-4"></div>
+    const skeleton = (
+      <div className="animate-pulse">
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-16 bg-primary-50 rounded"></div>
@@ -90,63 +99,68 @@ export default function MyComments() {
         </div>
       </div>
     );
+
+    if (embedded) return skeleton;
+
+    return (
+      <div className="card p-6 mb-8">
+        <div className="h-6 bg-primary-100 rounded w-1/3 mb-4"></div>
+        {skeleton}
+      </div>
+    );
   }
 
   if (comments.length === 0) {
+    if (embedded) {
+      return <p className="text-center text-primary-400 py-4">Noch keine Kommentare</p>;
+    }
     return null;
   }
 
-  return (
-    <div className="card p-6 mb-8">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <User className="w-5 h-5 text-primary-600" />
-          <h2 className="text-lg font-semibold text-primary-900">Meine Kommentare</h2>
-          <span className="badge-neutral">{comments.length}</span>
-        </div>
+  const filterButtons = (
+    <div className="flex items-center gap-1 bg-primary-100 rounded-lg p-0.5">
+      <button
+        onClick={() => { setFilter('all'); setShowAll(false); }}
+        className={`text-xs px-2.5 py-1 rounded-md transition-colors ${
+          filter === 'all'
+            ? 'bg-white text-primary-700 shadow-sm'
+            : 'text-primary-500 hover:text-primary-700'
+        }`}
+      >
+        Alle ({comments.length})
+      </button>
+      <button
+        onClick={() => { setFilter('open'); setShowAll(false); }}
+        className={`text-xs px-2.5 py-1 rounded-md transition-colors ${
+          filter === 'open'
+            ? 'bg-white text-amber-700 shadow-sm'
+            : 'text-primary-500 hover:text-primary-700'
+        }`}
+      >
+        Offen ({openCount})
+      </button>
+      <button
+        onClick={() => { setFilter('resolved'); setShowAll(false); }}
+        className={`text-xs px-2.5 py-1 rounded-md transition-colors ${
+          filter === 'resolved'
+            ? 'bg-white text-accent-700 shadow-sm'
+            : 'text-primary-500 hover:text-primary-700'
+        }`}
+      >
+        Erledigt ({resolvedCount})
+      </button>
+    </div>
+  );
 
-        {/* Filter */}
-        <div className="flex items-center gap-1 bg-primary-100 rounded-lg p-0.5">
-          <button
-            onClick={() => setFilter('all')}
-            className={`text-xs px-2.5 py-1 rounded-md transition-colors ${
-              filter === 'all'
-                ? 'bg-white text-primary-700 shadow-sm'
-                : 'text-primary-500 hover:text-primary-700'
-            }`}
-          >
-            Alle ({comments.length})
-          </button>
-          <button
-            onClick={() => setFilter('open')}
-            className={`text-xs px-2.5 py-1 rounded-md transition-colors ${
-              filter === 'open'
-                ? 'bg-white text-amber-700 shadow-sm'
-                : 'text-primary-500 hover:text-primary-700'
-            }`}
-          >
-            Offen ({openCount})
-          </button>
-          <button
-            onClick={() => setFilter('resolved')}
-            className={`text-xs px-2.5 py-1 rounded-md transition-colors ${
-              filter === 'resolved'
-                ? 'bg-white text-accent-700 shadow-sm'
-                : 'text-primary-500 hover:text-primary-700'
-            }`}
-          >
-            Erledigt ({resolvedCount})
-          </button>
-        </div>
-      </div>
-
-      <div className="space-y-2 max-h-80 overflow-y-auto">
-        {filteredComments.length === 0 ? (
+  const commentList = (
+    <>
+      <div className="space-y-2">
+        {displayedComments.length === 0 ? (
           <p className="text-center text-primary-400 py-4">
             Keine {filter === 'open' ? 'offenen' : 'erledigten'} Kommentare
           </p>
         ) : (
-          filteredComments.map((comment) => (
+          displayedComments.map((comment) => (
             <Link
               key={comment.id}
               to={getCommentLink(comment)}
@@ -197,6 +211,48 @@ export default function MyComments() {
           ))
         )}
       </div>
+
+      {/* Show more button */}
+      {hasMore && (
+        <button
+          onClick={() => setShowAll(!showAll)}
+          className="mt-3 w-full py-2 text-sm text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded-lg transition-colors flex items-center justify-center gap-1"
+        >
+          {showAll ? (
+            <>Weniger anzeigen</>
+          ) : (
+            <>
+              <ChevronDown className="w-4 h-4" />
+              {filteredComments.length - INITIAL_SHOW_COUNT} weitere anzeigen
+            </>
+          )}
+        </button>
+      )}
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <>
+        <div className="flex justify-end mb-3">
+          {filterButtons}
+        </div>
+        {commentList}
+      </>
+    );
+  }
+
+  return (
+    <div className="card p-6 mb-8">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <User className="w-5 h-5 text-primary-600" />
+          <h2 className="text-lg font-semibold text-primary-900">Meine Kommentare</h2>
+          <span className="badge-neutral">{comments.length}</span>
+        </div>
+        {filterButtons}
+      </div>
+      {commentList}
     </div>
   );
 }

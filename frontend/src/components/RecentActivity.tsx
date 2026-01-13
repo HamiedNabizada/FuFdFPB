@@ -16,7 +16,11 @@ interface Activity {
   group: { id: number; name: string; version: string } | null;
 }
 
-export default function RecentActivity() {
+interface RecentActivityProps {
+  embedded?: boolean;
+}
+
+export default function RecentActivity({ embedded = false }: RecentActivityProps) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -78,9 +82,8 @@ export default function RecentActivity() {
   };
 
   if (loading) {
-    return (
-      <div className="card p-6 animate-pulse">
-        <div className="h-6 bg-primary-100 rounded w-1/3 mb-4"></div>
+    const skeleton = (
+      <div className="animate-pulse">
         <div className="space-y-3">
           {[1, 2, 3].map(i => (
             <div key={i} className="h-16 bg-primary-50 rounded"></div>
@@ -88,20 +91,26 @@ export default function RecentActivity() {
         </div>
       </div>
     );
+
+    if (embedded) return skeleton;
+
+    return (
+      <div className="card p-6">
+        <div className="h-6 bg-primary-100 rounded w-1/3 mb-4"></div>
+        {skeleton}
+      </div>
+    );
   }
 
   if (activities.length === 0) {
+    if (embedded) {
+      return <p className="text-center text-primary-400 py-4">Noch keine Aktivitäten</p>;
+    }
     return null;
   }
 
-  return (
-    <div className="card p-6">
-      <div className="flex items-center gap-2 mb-4">
-        <Clock className="w-5 h-5 text-primary-600" />
-        <h2 className="text-lg font-semibold text-primary-900">Letzte Aktivität</h2>
-      </div>
-
-      <div className="space-y-3">
+  const content = (
+    <div className="space-y-3">
         {activities.map((activity) => (
           <Link
             key={`${activity.type}-${activity.id}`}
@@ -156,7 +165,20 @@ export default function RecentActivity() {
             </div>
           </Link>
         ))}
+    </div>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
+  return (
+    <div className="card p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Clock className="w-5 h-5 text-primary-600" />
+        <h2 className="text-lg font-semibold text-primary-900">Letzte Aktivität</h2>
       </div>
+      {content}
     </div>
   );
 }
